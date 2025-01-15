@@ -1,9 +1,10 @@
-import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { Grid, Paper, Typography } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import UserManagement from './UserManagement';
 import LeadManagement from './LeadManagement';
+import Booking from './Booking';
+import Settings from './Settings';
 
 const mockData = [
   { name: 'Jan', leads: 4 },
@@ -53,9 +54,12 @@ function Dashboard({ userRole }) {
     <Routes>
       <Route path="/" element={<DashboardHome />} />
       <Route path="/leads" element={<LeadManagement />} />
+      <Route path="/booking" element={<Booking />} />
+      <Route path="/settings" element={<Settings />} />
       {userRole === 'Admin' && <Route path="/users" element={<UserManagement />} />}
     </Routes>
   );
 }
 
 export default Dashboard;
+

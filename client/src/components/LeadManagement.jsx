@@ -76,7 +76,7 @@ function LeadManagement() {
   return (
     <Fade in={true} timeout={1000}>
       <Box>
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', }}>
           <Typography variant="h4">Lead Management</Typography>
           <Button variant="contained" onClick={() => setOpenDialog(true)}>
             Add Lead

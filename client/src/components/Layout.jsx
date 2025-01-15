@@ -1,10 +1,10 @@
 import { Box, AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton } from '@mui/material';
-import { Dashboard as DashboardIcon, People, Assignment, Logout } from '@mui/icons-material';
+import { Dashboard as DashboardIcon, People, Assignment, Book, Settings, Logout } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 240;
 
-function Layout({ children, userRole }) {
+function Layout({ children, userRole, onLogout }) {
   const navigate = useNavigate();
 
   return (
@@ -14,7 +14,7 @@ function Layout({ children, userRole }) {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             AdinathTV Dashboard
           </Typography>
-          <IconButton color="inherit" onClick={() => navigate('/login')}>
+          <IconButton color="inherit" onClick={onLogout}>
             <Logout />
           </IconButton>
         </Toolbar>
@@ -45,6 +45,18 @@ function Layout({ children, userRole }) {
               </ListItemIcon>
               <ListItemText primary="Leads" />
             </ListItem>
+            <ListItem button onClick={() => navigate('/dashboard/booking')}>
+              <ListItemIcon>
+                <Book />
+              </ListItemIcon>
+              <ListItemText primary="Booking" />
+            </ListItem>
+            <ListItem button onClick={() => navigate('/dashboard/settings')}>
+              <ListItemIcon>
+                <Settings />
+              </ListItemIcon>
+              <ListItemText primary="Settings" />
+            </ListItem>
             {userRole === 'Admin' && (
               <ListItem button onClick={() => navigate('/dashboard/users')}>
                 <ListItemIcon>
@@ -65,3 +77,4 @@ function Layout({ children, userRole }) {
 }
 
 export default Layout;
+
