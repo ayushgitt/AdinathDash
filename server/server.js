@@ -8,6 +8,13 @@ import dotenv from "dotenv"
 dotenv.config()
 
 const app = express()
+import cors from 'cors';
+const corsOptions = {
+    origin: true,
+    credentials: true,
+    optionsSuccessStatus: 200,
+}
+app.use(cors(corsOptions));
 app.use(bodyParser.json())
 app.use(cors())
 
