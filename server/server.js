@@ -25,10 +25,11 @@ const dbConfig = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 }
+let pool;
 
 // Utility to create a connection pool
 try{
-  const pool = createPool(dbConfig) 
+  pool = createPool(dbConfig) 
   console.log("connect to pokemon");
 }
 catch(E){
