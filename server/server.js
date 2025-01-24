@@ -8,7 +8,7 @@ import dotenv from "dotenv"
 dotenv.config()
 
 const app = express()
-import cors from 'cors';
+
 const corsOptions = {
     origin: true,
     credentials: true,
@@ -16,7 +16,7 @@ const corsOptions = {
 }
 app.use(cors(corsOptions));
 app.use(bodyParser.json())
-app.use(cors())
+
 
 // Database configuration
 const dbConfig = {
@@ -27,8 +27,13 @@ const dbConfig = {
 }
 
 // Utility to create a connection pool
-const pool = createPool(dbConfig)
-
+try{
+  const pool = createPool(dbConfig) 
+  console.log("connect to pokemon");
+}
+catch(E){
+  console.log(E);
+}
 // Get all users
 app.get("/users", async (req, res) => {
   try {
