@@ -1,20 +1,24 @@
-import { Routes, Route } from 'react-router-dom';
-import { Grid, Paper, Typography } from '@mui/material';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import UserManagement from './UserManagement';
-import LeadManagement from './LeadManagement';
-import Booking from './Booking';
-import Settings from './Settings';
+import React, { useState, useEffect } from "react"
+import { Grid, Paper, Typography } from "@mui/material"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import axios from "axios"
 
-const mockData = [
-  { name: 'Jan', leads: 4 },
-  { name: 'Feb', leads: 3 },
-  { name: 'Mar', leads: 6 },
-  { name: 'Apr', leads: 8 },
-  { name: 'May', leads: 7 },
-];
+function Dashboard() {
+  const [leadStats, setLeadStats] = useState([])
 
-function DashboardHome() {
+  useEffect(() => {
+    fetchLeadStats()
+  }, [])
+
+  const fetchLeadStats = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/lead-stats`)
+      setLeadStats(response.data)
+    } catch (error) {
+      console.error("Error fetching lead stats:", error)
+    }
+  }
+
   return (
     <Grid container spacing={3}>
       <Grid item xs={12}>
@@ -27,14 +31,16 @@ function DashboardHome() {
           <Typography variant="h6" gutterBottom>
             Lead Statistics
           </Typography>
-          <BarChart width={500} height={300} data={mockData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="leads" fill="#8884d8" />
-          </BarChart>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={leadStats}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="leads" fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
         </Paper>
       </Grid>
       <Grid item xs={12} md={6}>
@@ -43,23 +49,12 @@ function DashboardHome() {
             Recent Activity
           </Typography>
           {/* Add recent activity content here */}
+          <Typography>No recent activity to display.</Typography>
         </Paper>
       </Grid>
     </Grid>
-  );
+  )
 }
 
-function Dashboard({ userRole }) {
-  return (
-    <Routes>
-      <Route path="/" element={<DashboardHome />} />
-      <Route path="/leads" element={<LeadManagement />} />
-      <Route path="/booking" element={<Booking />} />
-      <Route path="/settings" element={<Settings />} />
-      {userRole === 'Admin' && <Route path="/users" element={<UserManagement />} />}
-    </Routes>
-  );
-}
-
-export default Dashboard;
+export default Dashboard
 

@@ -1,14 +1,37 @@
-import { Box, AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton } from '@mui/material';
-import { Dashboard as DashboardIcon, People, Assignment, Book, Settings, Logout } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import React from "react"
+import { Link, useLocation } from "react-router-dom"
+import {
+  Box,
+  AppBar,
+  Toolbar,
+  Typography,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  IconButton,
+} from "@mui/material"
+import { Dashboard as DashboardIcon, People, Assignment, Book, Settings, Logout } from "@mui/icons-material"
 
-const drawerWidth = 240;
+const drawerWidth = 240
 
 function Layout({ children, userRole, onLogout }) {
-  const navigate = useNavigate();
+  const location = useLocation()
+
+  const menuItems = [
+    { title: "Dashboard", icon: DashboardIcon, path: "/dashboard" },
+    { title: "Leads", icon: Assignment, path: "/leads" },
+    { title: "Booking", icon: Book, path: "/booking" },
+    { title: "Settings", icon: Settings, path: "/settings" },
+  ]
+
+  if (userRole === "Admin") {
+    menuItems.splice(1, 0, { title: "Users", icon: People, path: "/users" })
+  }
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: "flex" }}>
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
@@ -24,47 +47,26 @@ function Layout({ children, userRole, onLogout }) {
         sx={{
           width: drawerWidth,
           flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-          },
+          [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: "border-box" },
         }}
       >
         <Toolbar />
-        <Box sx={{ overflow: 'auto' }}>
+        <Box sx={{ overflow: "auto" }}>
           <List>
-            <ListItem button onClick={() => navigate('/dashboard')}>
-              <ListItemIcon>
-                <DashboardIcon />
-              </ListItemIcon>
-              <ListItemText primary="Dashboard" />
-            </ListItem>
-            <ListItem button onClick={() => navigate('/dashboard/leads')}>
-              <ListItemIcon>
-                <Assignment />
-              </ListItemIcon>
-              <ListItemText primary="Leads" />
-            </ListItem>
-            <ListItem button onClick={() => navigate('/dashboard/booking')}>
-              <ListItemIcon>
-                <Book />
-              </ListItemIcon>
-              <ListItemText primary="Booking" />
-            </ListItem>
-            <ListItem button onClick={() => navigate('/dashboard/settings')}>
-              <ListItemIcon>
-                <Settings />
-              </ListItemIcon>
-              <ListItemText primary="Settings" />
-            </ListItem>
-            {userRole === 'Admin' && (
-              <ListItem button onClick={() => navigate('/dashboard/users')}>
+            {menuItems.map((item) => (
+              <ListItem
+                button
+                key={item.title}
+                component={Link}
+                to={item.path}
+                selected={location.pathname === item.path}
+              >
                 <ListItemIcon>
-                  <People />
+                  <item.icon />
                 </ListItemIcon>
-                <ListItemText primary="Users" />
+                <ListItemText primary={item.title} />
               </ListItem>
-            )}
+            ))}
           </List>
         </Box>
       </Drawer>
@@ -73,8 +75,8 @@ function Layout({ children, userRole, onLogout }) {
         {children}
       </Box>
     </Box>
-  );
+  )
 }
 
-export default Layout;
+export default Layout
 

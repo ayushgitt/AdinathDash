@@ -26,13 +26,13 @@ function Settings() {
             <ListItemIcon>
               <Schedule />
             </ListItemIcon>
-            <ListItemText primary="Schedule Jobs" secondary="Manage automated tasks and schedules" />
+            <ListItemText primary="Schedule " secondary="Manage automated tasks and schedules" />
           </ListItem>
           <ListItem button>
             <ListItemIcon>
               <Description />
             </ListItemIcon>
-            <ListItemText primary="Templates" secondary="Manage message templates" />
+            <ListItemText primary="Profile Update" secondary="Manage your profile ." />
           </ListItem>
         </List>
       </Paper>

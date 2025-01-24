@@ -1,63 +1,57 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import Dashboard from './components/Dashboard';
-import Login from './components/Login';
-import Layout from './components/Layout';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+import React, { useState } from "react"
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom"
+import Login from "./components/Login"
+import Layout from "./components/Layout"
+import Dashboard from "./components/Dashboard"
+import UserManagement from "./components/UserManagement"
+import LeadManagement from "./components/LeadManagement"
+import Booking from "./components/Booking"
+import Settings from "./components/Settings"
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [userRole, setUserRole] = useState("")
 
   const handleLogin = (role) => {
-    setIsAuthenticated(true);
-    setUserRole(role);
-  };
+    setIsAuthenticated(true)
+    setUserRole(role)
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setUserRole("")
+  }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <BrowserRouter>
-        <Routes>
-          <Route 
-            path="/login" 
-            element={
-              !isAuthenticated ? (
-                <Login onLogin={handleLogin} />
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
-            } 
-          />
-          <Route 
-            path="/dashboard/*" 
-            element={
-              isAuthenticated ? (
-                <Layout userRole={userRole}>
-                  <Dashboard userRole={userRole} />
-                </Layout>
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            } 
-          />
-          <Route path="/" element={<Navigate to="/login" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </ThemeProvider>
-  );
+    <Router>
+      <Routes>
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onLogin={handleLogin} />}
+        />
+        <Route
+          path="/*"
+          element={
+            isAuthenticated ? (
+              <Layout userRole={userRole} onLogout={handleLogout}>
+                <Routes>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  {userRole === "Admin" && <Route path="/users" element={<UserManagement />} />}
+                  <Route path="/leads" element={<LeadManagement />} />
+                  <Route path="/booking" element={<Booking />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Routes>
+              </Layout>
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
+    </Router>
+  )
 }
 
-export default App;
+export default App
+
