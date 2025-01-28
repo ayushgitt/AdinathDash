@@ -27,7 +27,7 @@ function Layout({ children, userRole, onLogout }) {
   ]
 
   if (userRole === "Admin") {
-    menuItems.splice(1, 0, { title: "Users", icon: People, path: "/users" })
+    menuItems.splice(1, 0, { title: "Employee", icon: People, path: "/users" })
   }
 
   return (

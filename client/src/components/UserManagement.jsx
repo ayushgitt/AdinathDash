@@ -82,9 +82,9 @@ function UserManagement() {
   return (
     <Box>
       <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="h4">User Management</Typography>
+        <Typography variant="h4">Employee Management</Typography>
         <Button variant="contained" onClick={() => setOpenDialog(true)}>
-          Add User
+          Add Employee
         </Button>
       </Box>
 
@@ -134,6 +134,9 @@ function UserManagement() {
               <Select name="role" defaultValue={selectedUser?.role || ""}>
                 <MenuItem value="Admin">Admin</MenuItem>
                 <MenuItem value="Employee">Employee</MenuItem>
+                <MenuItem value="Employee">Manager</MenuItem>
+                <MenuItem value="Employee">Owner</MenuItem>
+
               </Select>
             </FormControl>
             <FormControl fullWidth margin="normal">

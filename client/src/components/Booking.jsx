@@ -66,12 +66,7 @@ function Booking() {
 
   return (
     <Box>
-      <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="h4">Booking Management</Typography>
-        <Button variant="contained" onClick={() => setOpenDialog(true)}>
-          Add Booking
-        </Button>
-      </Box>
+      
 
       <TableContainer component={Paper}>
         <Table>
