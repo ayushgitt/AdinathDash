@@ -29,7 +29,7 @@ let pool;
 
 // Utility to create a connection pool
 try{
-  pool = createPool(dbConfig) 
+   pool = createPool(dbConfig) 
   console.log("connect to pokemon");
 }
 catch(E){
