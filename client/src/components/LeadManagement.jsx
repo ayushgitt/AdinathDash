@@ -16,122 +16,96 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  Select,
-  MenuItem,
   FormControl,
   InputLabel,
-  IconButton,
-  FormHelperText,
+  Select,
+  MenuItem,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material"
-import { Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material"
+import EditIcon from "@mui/icons-material/Edit"
+import DeleteIcon from "@mui/icons-material/Delete"
 
-function UserManagement() {
-  const [users, setUsers] = useState([])
+function LeadManagement() {
+  const [leads, setLeads] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false)
-  const [selectedUser, setSelectedUser] = useState(null)
-  const [departments, setDepartments] = useState([])
-  const [userToDelete, setUserToDelete] = useState(null)
-  const [managers, setManagers] = useState([])
-  const [formErrors, setFormErrors] = useState({})
+  const [selectedLead, setSelectedLead] = useState(null)
+  const [employees, setEmployees] = useState([])
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [leadToDelete, setLeadToDelete] = useState(null)
 
   useEffect(() => {
-    fetchUsers()
-    fetchDepartments()
-    fetchManagers()
+    fetchLeads()
+    fetchEmployees()
   }, [])
 
-  const fetchUsers = async () => {
+  const fetchLeads = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users`)
-      setUsers(response.data)
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/leads`)
+      setLeads(response.data)
     } catch (error) {
-      console.error("Error fetching users:", error)
+      console.error("Error fetching leads:", error)
     }
   }
 
-  const fetchDepartments = async () => {
+  const fetchEmployees = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/departments`)
-      setDepartments(response.data)
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/employees`)
+      setEmployees(response.data)
     } catch (error) {
-      console.error("Error fetching departments:", error)
+      console.error("Error fetching employees:", error)
     }
   }
 
-  const fetchManagers = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/managers`)
-      setManagers(response.data)
-    } catch (error) {
-      console.error("Error fetching managers:", error)
-    }
-  }
-
-  const handleEdit = (user) => {
-    setSelectedUser(user)
+  const handleEdit = (lead) => {
+    setSelectedLead(lead)
     setOpenDialog(true)
+  }
+
+  const handleDeleteConfirm = (leadId) => {
+    setLeadToDelete(leadId)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleDelete = async () => {
+    try {
+      await axios.delete(`${import.meta.env.VITE_API_URL}/leads/${leadToDelete}`)
+      fetchLeads()
+      setDeleteConfirmOpen(false)
+    } catch (error) {
+      console.error("Error deleting lead:", error)
+    }
   }
 
   const handleClose = () => {
     setOpenDialog(false)
-    setSelectedUser(null)
-    setFormErrors({})
+    setSelectedLead(null)
   }
 
   const handleSave = async (event) => {
     event.preventDefault()
     const formData = new FormData(event.target)
-    const userData = Object.fromEntries(formData.entries())
-
-    // Form validation
-    const errors = {}
-    if (!userData.employee_name) errors.employee_name = "Employee name is required"
-    if (!userData.phone) errors.phone = "Phone number is required"
-    if (!userData.email) errors.email = "Email is required"
-    if (userData.email && !/\S+@\S+\.\S+/.test(userData.email)) errors.email = "Invalid email format"
-    if (!userData.department_id) errors.department_id = "Department is required"
-    if (!userData.role) errors.role = "Role is required"
-
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors)
-      return
-    }
+    const leadData = Object.fromEntries(formData.entries())
 
     try {
-      if (selectedUser) {
-        await axios.put(`${import.meta.env.VITE_API_URL}/users/${selectedUser.employee_id}`, userData)
+      if (selectedLead) {
+        await axios.put(`${import.meta.env.VITE_API_URL}/leads/${selectedLead.lead_id}`, leadData)
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL}/users`, userData)
+        await axios.post(`${import.meta.env.VITE_API_URL}/leads`, leadData)
       }
-      fetchUsers()
+      fetchLeads()
       handleClose()
     } catch (error) {
-      console.error("Error saving user:", error)
-    }
-  }
-
-  const handleDeleteConfirmation = (user) => {
-    setUserToDelete(user)
-    setOpenDeleteDialog(true)
-  }
-
-  const handleDelete = async () => {
-    try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/users/${userToDelete.employee_id}`)
-      fetchUsers()
-      setOpenDeleteDialog(false)
-    } catch (error) {
-      console.error("Error deleting user:", error)
+      console.error("Error saving lead:", error)
     }
   }
 
   return (
     <Box>
       <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Typography variant="h4">Employee Management</Typography>
+        <Typography variant="h4">Lead Management</Typography>
         <Button variant="contained" onClick={() => setOpenDialog(true)}>
-          Add Employee
+          Add Lead
         </Button>
       </Box>
 
@@ -139,39 +113,41 @@ function UserManagement() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Employee ID</TableCell>
-              <TableCell>Employee Name</TableCell>
-              <TableCell>Phone</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Address</TableCell>
-              <TableCell>Work Email</TableCell>
-              <TableCell>Department</TableCell>
-              <TableCell>Manager</TableCell>
-              <TableCell>Role</TableCell>
+              <TableCell>Lead ID</TableCell>
+              <TableCell>Date</TableCell>
+              <TableCell>Leads Generated By</TableCell>
+              <TableCell>Programme Name</TableCell>
+              <TableCell>Maharaj Ji /Mataji Name</TableCell>
+              <TableCell>Lead Handled By</TableCell>
+              <TableCell>Location</TableCell>
+              <TableCell>Start Date</TableCell>
+              <TableCell>End Date</TableCell>
+              <TableCell>Contact</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.employee_id}>
-                <TableCell>{user.employee_id}</TableCell>
-                <TableCell>{user.employee_name}</TableCell>
-                <TableCell>{user.phone}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.address}</TableCell>
-                <TableCell>{user.work_email}</TableCell>
-                <TableCell>{user.department_name}</TableCell>
-                <TableCell>{managers.find((m) => m.employee_id === user.manager_id)?.employee_name || "N/A"}</TableCell>
-                <TableCell>{user.role}</TableCell>
-                <TableCell>{user.status}</TableCell>
+            {leads.map((lead) => (
+              <TableRow key={lead.lead_id}>
+                <TableCell>{lead.lead_id}</TableCell>
+                <TableCell>{lead.date}</TableCell>
+                <TableCell>{lead.leads_generated_by}</TableCell>
+                <TableCell>{lead.programme_name}</TableCell>
+                <TableCell>{lead.maharaj_mataji_name}</TableCell>
+                <TableCell>{lead.lead_handled_by}</TableCell>
+                <TableCell>{lead.location}</TableCell>
+                <TableCell>{lead.start_date}</TableCell>
+                <TableCell>{lead.end_date}</TableCell>
+                <TableCell>{lead.contact}</TableCell>
+                <TableCell>{lead.status}</TableCell>
                 <TableCell>
-                  <IconButton onClick={() => handleEdit(user)}>
+                  <Button onClick={() => handleEdit(lead)}>
                     <EditIcon />
-                  </IconButton>
-                  <IconButton onClick={() => handleDeleteConfirmation(user)}>
+                  </Button>
+                  <Button onClick={() => handleDeleteConfirm(lead.lead_id)}>
                     <DeleteIcon />
-                  </IconButton>
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -179,96 +155,81 @@ function UserManagement() {
         </Table>
       </TableContainer>
 
-      <Dialog open={openDialog} onClose={handleClose}>
-        <DialogTitle>{selectedUser ? "Edit User" : "Add User"}</DialogTitle>
+      <Dialog open={openDialog} onClose={handleClose} maxWidth="md" fullWidth>
+        <DialogTitle>{selectedLead ? "Edit Lead" : "Add Lead"}</DialogTitle>
         <form onSubmit={handleSave}>
           <DialogContent>
             <TextField
               fullWidth
-              label="Employee Name"
-              name="employee_name"
+              label="Date"
+              name="date"
+              type="date"
               margin="normal"
-              defaultValue={selectedUser?.employee_name}
-              error={!!formErrors.employee_name}
-              helperText={formErrors.employee_name}
-            />
-            <TextField
-              fullWidth
-              label="Phone"
-              name="phone"
-              margin="normal"
-              defaultValue={selectedUser?.phone}
-              error={!!formErrors.phone}
-              helperText={formErrors.phone}
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              margin="normal"
-              defaultValue={selectedUser?.email}
-              error={!!formErrors.email}
-              helperText={formErrors.email}
-            />
-            <TextField fullWidth label="Address" name="address" margin="normal" defaultValue={selectedUser?.address} />
-            <TextField
-              fullWidth
-              label="Work Email"
-              name="work_email"
-              margin="normal"
-              defaultValue={selectedUser?.work_email}
+              defaultValue={selectedLead?.date}
+              InputLabelProps={{ shrink: true }}
             />
             <FormControl fullWidth margin="normal">
-              <InputLabel>Department</InputLabel>
+              <InputLabel id="leads-generated-by-label">Leads Generated By</InputLabel>
               <Select
-                name="department_id"
-                defaultValue={selectedUser?.department_id || ""}
-                error={!!formErrors.department_id}
+                labelId="leads-generated-by-label"
+                name="leads_generated_by"
+                defaultValue={selectedLead?.leads_generated_by || ""}
               >
-                {departments.map((dept) => (
-                  <MenuItem key={dept.department_id} value={dept.department_id}>
-                    {dept.department_name}
+                {employees.map((employee) => (
+                  <MenuItem key={employee.employee_id} value={employee.employee_name}>
+                    {employee.employee_name}
                   </MenuItem>
                 ))}
               </Select>
-              {formErrors.department_id && <FormHelperText error>{formErrors.department_id}</FormHelperText>}
             </FormControl>
             <TextField
               fullWidth
-              label="Username"
-              name="username"
+              label="Programme Name"
+              name="programme_name"
               margin="normal"
-              defaultValue={selectedUser?.username}
+              defaultValue={selectedLead?.programme_name}
             />
-            <TextField fullWidth label="Password" name="password" type="password" margin="normal" />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Role</InputLabel>
-              <Select name="role" defaultValue={selectedUser?.role || ""} error={!!formErrors.role}>
-                <MenuItem value="employee">Employee</MenuItem>
-                <MenuItem value="manager">Manager</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-                <MenuItem value="owner">Owner</MenuItem>
-              </Select>
-              {formErrors.role && <FormHelperText error>{formErrors.role}</FormHelperText>}
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Status</InputLabel>
-              <Select name="status" defaultValue={selectedUser?.status || "Active"}>
-                <MenuItem value="Active">Active</MenuItem>
-                <MenuItem value="Inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Manager</InputLabel>
-              <Select name="manager_id" defaultValue={selectedUser?.manager_id || ""}>
-                <MenuItem value="">None</MenuItem>
-                {managers.map((manager) => (
-                  <MenuItem key={manager.employee_id} value={manager.employee_id}>
-                    {manager.employee_name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <TextField
+              fullWidth
+              label="Maharaj Ji /Mataji Name"
+              name="maharaj_mataji_name"
+              margin="normal"
+              defaultValue={selectedLead?.maharaj_mataji_name}
+            />
+            <TextField
+              fullWidth
+              label="Lead Handled By"
+              name="lead_handled_by"
+              margin="normal"
+              defaultValue={selectedLead?.lead_handled_by}
+            />
+            <TextField
+              fullWidth
+              label="Location"
+              name="location"
+              margin="normal"
+              defaultValue={selectedLead?.location}
+            />
+            <TextField
+              fullWidth
+              label="Start Date"
+              name="start_date"
+              type="date"
+              margin="normal"
+              defaultValue={selectedLead?.start_date}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              fullWidth
+              label="End Date"
+              name="end_date"
+              type="date"
+              margin="normal"
+              defaultValue={selectedLead?.end_date}
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField fullWidth label="Contact" name="contact" margin="normal" defaultValue={selectedLead?.contact} />
+            <TextField fullWidth label="Status" name="status" margin="normal" defaultValue={selectedLead?.status} />
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
@@ -280,18 +241,18 @@ function UserManagement() {
       </Dialog>
 
       <Dialog
-        open={openDeleteDialog}
-        onClose={() => setOpenDeleteDialog(false)}
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
         <DialogTitle id="alert-dialog-title">{"Confirm Delete"}</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to delete the employee: {userToDelete?.employee_name}?</Typography>
+          <Typography>Are you sure you want to delete this lead?</Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" autoFocus>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={handleDelete} autoFocus>
             Delete
           </Button>
         </DialogActions>
@@ -300,5 +261,5 @@ function UserManagement() {
   )
 }
 
-export default UserManagement
+export default LeadManagement
 
