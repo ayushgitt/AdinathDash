@@ -7,6 +7,7 @@ import UserManagement from "./components/UserManagement"
 import LeadManagement from "./components/LeadManagement"
 import Booking from "./components/Booking"
 import Settings from "./components/Settings"
+import Welcome from "../src/page/welcome"
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -25,6 +26,10 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route
+         path="/"
+         element={<Welcome/>}
+        />
         <Route
           path="/login"
           element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Login onLogin={handleLogin} />}

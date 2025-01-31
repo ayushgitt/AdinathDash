@@ -10,13 +10,12 @@ dotenv.config()
 const app = express()
 
 const corsOptions = {
-    origin: true,
-    credentials: true,
-    optionsSuccessStatus: 200,
+  origin: true,
+  credentials: true,
+  optionsSuccessStatus: 200,
 }
-app.use(cors(corsOptions));
+app.use(cors(corsOptions))
 app.use(bodyParser.json())
-
 
 // Database configuration
 const dbConfig = {
@@ -25,15 +24,14 @@ const dbConfig = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 }
-let pool;
+let pool
 
 // Utility to create a connection pool
-try{
-   pool = createPool(dbConfig) 
-  console.log("connect to pokemon");
-}
-catch(E){
-  console.log(E);
+try {
+  pool = createPool(dbConfig)
+  console.log("connect to pokemon")
+} catch (E) {
+  console.log(E)
 }
 // Get all users
 app.get("/users", async (req, res) => {
@@ -217,33 +215,39 @@ app.get("/hocs/:leadId", async (req, res) => {
 // Add a new lead
 app.post("/leads", async (req, res) => {
   const {
-    lead_name,
-    event_name,
-    event_date,
-    poc_no,
+    date,
+    leads_generated_by,
+    programme_name,
+    maharaj_mataji_name,
+    lead_handled_by,
     location,
-    maharaj_mandir,
-    sales_person_1,
-    sales_person_contact_1,
-    hocs,
+    start_date,
+    end_date,
+    contact,
+    status,
   } = req.body
 
   try {
     const [result] = await pool.query(
       `INSERT INTO AdinathTV_Leads 
-            (lead_name, event_name, event_date, poc_no, location, maharaj_mandir, sales_person_1, sales_person_contact_1) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [lead_name, event_name, event_date, poc_no, location, maharaj_mandir, sales_person_1, sales_person_contact_1],
+      (date, leads_generated_by, programme_name, maharaj_mataji_name, lead_handled_by, 
+      location, start_date, end_date, contact, status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        date,
+        leads_generated_by,
+        programme_name,
+        maharaj_mataji_name,
+        lead_handled_by,
+        location,
+        start_date,
+        end_date,
+        contact,
+        status,
+      ],
     )
 
-    const leadId = result.insertId
-
-    if (hocs && hocs.length > 0) {
-      const hocValues = hocs.map((hoc) => [leadId, hoc.host_name, hoc.poc_contact])
-      await pool.query("INSERT INTO AdinathTV_Host_POC (lead_id, host_name, poc_contact) VALUES ?", [hocValues])
-    }
-
-    res.status(201).json({ message: "Lead and HOCs added successfully.", leadId })
+    res.status(201).json({ message: "Lead added successfully.", leadId: result.insertId })
   } catch (err) {
     console.error("Error adding lead:", err)
     res.status(500).json({ error: err.message })
@@ -254,42 +258,38 @@ app.post("/leads", async (req, res) => {
 app.put("/leads/:leadId", async (req, res) => {
   const { leadId } = req.params
   const {
-    lead_name,
-    event_name,
-    event_date,
-    poc_no,
+    date,
+    leads_generated_by,
+    programme_name,
+    maharaj_mataji_name,
+    lead_handled_by,
     location,
-    maharaj_mandir,
-    sales_person_1,
-    sales_person_contact_1,
-    hocs,
+    start_date,
+    end_date,
+    contact,
+    status,
   } = req.body
 
   try {
     await pool.query(
       `UPDATE AdinathTV_Leads 
-            SET lead_name = ?, event_name = ?, event_date = ?, poc_no = ?, location = ?, maharaj_mandir = ?, 
-            sales_person_1 = ?, sales_person_contact_1 = ? 
-            WHERE lead_id = ?`,
+      SET date = ?, leads_generated_by = ?, programme_name = ?, maharaj_mataji_name = ?, 
+      lead_handled_by = ?, location = ?, start_date = ?, end_date = ?, contact = ?, status = ? 
+      WHERE lead_id = ?`,
       [
-        lead_name,
-        event_name,
-        event_date,
-        poc_no,
+        date,
+        leads_generated_by,
+        programme_name,
+        maharaj_mataji_name,
+        lead_handled_by,
         location,
-        maharaj_mandir,
-        sales_person_1,
-        sales_person_contact_1,
+        start_date,
+        end_date,
+        contact,
+        status,
         leadId,
       ],
     )
-
-    await pool.query("DELETE FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
-
-    if (hocs && hocs.length > 0) {
-      const hocValues = hocs.map((hoc) => [leadId, hoc.host_name, hoc.poc_contact])
-      await pool.query("INSERT INTO AdinathTV_Host_POC (lead_id, host_name, poc_contact) VALUES ?", [hocValues])
-    }
 
     res.json({ message: "Lead updated successfully." })
   } catch (err) {
@@ -304,10 +304,7 @@ app.delete("/leads/:leadId", async (req, res) => {
 
   try {
     await pool.query("DELETE FROM AdinathTV_Leads WHERE lead_id = ?", [leadId])
-
-    await pool.query("DELETE FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
-
-    res.json({ message: "Lead and associated HOCs deleted successfully." })
+    res.json({ message: "Lead deleted successfully." })
   } catch (err) {
     console.error("Error deleting lead:", err)
     res.status(500).json({ error: err.message })
@@ -478,4 +475,23 @@ const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
+// Add this after the existing table creation queries
+pool
+  .query(`
+  CREATE TABLE IF NOT EXISTS AdinathTV_Leads (
+    lead_id INT AUTO_INCREMENT PRIMARY KEY,
+    date DATE,
+    leads_generated_by VARCHAR(255),
+    programme_name VARCHAR(255),
+    maharaj_mataji_name VARCHAR(255),
+    lead_handled_by VARCHAR(255),
+    location VARCHAR(255),
+    start_date DATE,
+    end_date DATE,
+    contact VARCHAR(255),
+    status VARCHAR(50)
+  )
+`)
+  .catch((err) => console.error("Error creating table:", err))
 

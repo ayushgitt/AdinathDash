@@ -1,0 +1,10 @@
+.bg-primary.bg-gradient {
+    background-image: linear-gradient(to right, #007bff, #6610f2) !important;
+  }
+  
+  .btn-light:hover {
+    background-color: #f8f9fa;
+    color: #007bff;
+  }
+  
+  
