@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { Box, Button, TextField, Typography, Paper, Fade, Grow } from "@mui/material"
+import { Box, Button, TextField, Typography, Paper, Fade, Grow, Avatar } from "@mui/material"
 import { keyframes } from "@mui/system"
 import axios from "axios"
+import PersonIcon from "@mui/icons-material/Person"
 
 const fadeIn = keyframes`
   from {
@@ -18,6 +19,18 @@ const slideUp = keyframes`
   }
   to {
     transform: translateY(0);
+  }
+`
+
+const pulse = keyframes`
+  0% {
+    box-shadow: 0 0 0 0 rgba(83, 105, 248, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(83, 105, 248, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(83, 105, 248, 0);
   }
 `
 
@@ -69,8 +82,35 @@ function Login({ onLogin }) {
               overflow: "hidden",
               p: 4,
               animation: `${slideUp} 0.5s ease-out`,
+              transition: "box-shadow 0.3s ease-in-out",
+              "&:hover": {
+                boxShadow: "0 8px 24px rgba(83, 105, 248, 0.2)",
+              },
             }}
           >
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                mb: 3,
+              }}
+            >
+              <Avatar
+                sx={{
+                  width: 80,
+                  height: 80,
+                  bgcolor: "#5369f8",
+                  animation: `${pulse} 2s infinite`,
+                  transition: "transform 0.3s ease-in-out",
+                  "&:hover": {
+                    transform: "scale(1.1)",
+                  },
+                }}
+              >
+                <PersonIcon sx={{ fontSize: 50 }} />
+              </Avatar>
+            </Box>
+
             <Typography
               variant="h5"
               sx={{
@@ -105,7 +145,16 @@ function Login({ onLogin }) {
                 margin="normal"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                sx={{ mb: 2, animation: `${fadeIn} 0.8s ease-out 1.0s both` }}
+                sx={{
+                  mb: 2,
+                  animation: `${fadeIn} 0.8s ease-out 1.0s both`,
+                  "& .MuiOutlinedInput-root": {
+                    transition: "border-color 0.3s ease-in-out",
+                    "&:hover fieldset": {
+                      borderColor: "#5369f8",
+                    },
+                  },
+                }}
               />
               <TextField
                 fullWidth
@@ -114,7 +163,16 @@ function Login({ onLogin }) {
                 margin="normal"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                sx={{ mb: 3, animation: `${fadeIn} 1s ease-out 1.3s both` }}
+                sx={{
+                  mb: 3,
+                  animation: `${fadeIn} 1s ease-out 1.3s both`,
+                  "& .MuiOutlinedInput-root": {
+                    transition: "border-color 0.3s ease-in-out",
+                    "&:hover fieldset": {
+                      borderColor: "#5369f8",
+                    },
+                  },
+                }}
               />
               {error && (
                 <Typography color="error" sx={{ mb: 2, textAlign: "center" }}>
@@ -129,10 +187,12 @@ function Login({ onLogin }) {
                     bgcolor: "#5369f8",
                     color: "white",
                     py: 1,
+                    transition: "all 0.3s ease-in-out",
                     "&:hover": {
                       bgcolor: "#4559e8",
+                      transform: "translateY(-2px)",
+                      boxShadow: "0 4px 12px rgba(83, 105, 248, 0.4)",
                     },
-                    transition: "background-color 0.2s ease",
                   }}
                 >
                   Login
