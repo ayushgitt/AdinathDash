@@ -22,7 +22,7 @@ export default function TaskManagerLanding() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5, duration: 0.8 }}
                 >
-                    Organize your tasks efficiently and boost your productivity
+                    Organize your functions with ADINATHTV.
                 </motion.p>
                 <motion.div
                     initial={{ opacity: 0, y: 50 }}
