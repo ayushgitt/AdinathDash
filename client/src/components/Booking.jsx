@@ -20,6 +20,28 @@ import {
   AccordionDetails,
 } from "@mui/material"
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"
+import { styled } from "@mui/material/styles"
+
+// Styled components for custom table elements
+const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: theme.shadows[3],
+  marginTop: theme.spacing(2),
+}))
+
+const StyledTable = styled(Table)(({ theme }) => ({
+  minWidth: 650,
+}))
+
+const StyledTableRow = styled(TableRow)(({ theme }) => ({
+  backgroundColor: "#fdedd1", // Background color for table entries
+  "&:nth-of-type(odd)": {
+    backgroundColor: "#fdedd1", // Ensure odd rows also have the same color
+  },
+  "&:hover": {
+    backgroundColor: theme.palette.action.selected,
+  },
+}))
 
 function Booking() {
   const [bookings, setBookings] = useState([])
@@ -92,23 +114,23 @@ function Booking() {
   }
 
   return (
-    <Box>
-      <TableContainer component={Paper}>
-        <Table>
+    <Box sx={{ height: "100vh", overflow: "hidden", p: 3, backgroundColor: "rgba(253,232,199,255)" }}>
+      <StyledTableContainer component={Paper}>
+        <StyledTable>
           <TableHead>
             <TableRow>
-              <TableCell>Booking ID</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Client Name</TableCell>
-              <TableCell>Mobile No.</TableCell>
-              <TableCell>Shooting Address</TableCell>
-              <TableCell>Booking Amount</TableCell>
-              <TableCell>Actions</TableCell>
+              <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Booking ID</TableCell>
+              <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Date</TableCell>
+              <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Client Name</TableCell>
+              <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Mobile No.</TableCell>
+              <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Shooting Address</TableCell>
+              <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Booking Amount</TableCell>
+              <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {bookings.map((booking) => (
-              <TableRow key={booking.booking_id}>
+              <StyledTableRow key={booking.booking_id}>
                 <TableCell>{booking.booking_id}</TableCell>
                 <TableCell>{booking.date}</TableCell>
                 <TableCell>{booking.client_name}</TableCell>
@@ -116,15 +138,37 @@ function Booking() {
                 <TableCell>{booking.shooting_address}</TableCell>
                 <TableCell>{booking.booking_amount}</TableCell>
                 <TableCell>
-                  <Button onClick={() => handleEdit(booking)}>Details</Button>
+                  <Button
+                    onClick={() => handleEdit(booking)}
+                    sx={{
+                      backgroundColor: "#7e1519",
+                      color: "white",
+                      "&:hover": {
+                        backgroundColor: "#fdedd1",
+                        color: "#7e1519",
+                      },
+                    }}
+                  >
+                    Details
+                  </Button>
                 </TableCell>
-              </TableRow>
+              </StyledTableRow>
             ))}
           </TableBody>
-        </Table>
-      </TableContainer>
+        </StyledTable>
+      </StyledTableContainer>
 
-      <Dialog open={openDialog} onClose={handleClose} maxWidth="md" fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={handleClose}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: "#fdedd1", // Background color for the AADINATH TV BOOKING FORM
+          },
+        }}
+      >
         <DialogTitle>{selectedBooking ? "Edit Booking" : "Add Booking"}</DialogTitle>
         <form onSubmit={handleSave}>
           <DialogContent>
@@ -214,6 +258,13 @@ function Booking() {
                   name="shooting_date_from"
                   margin="normal"
                   defaultValue={selectedBooking?.shooting_date_from}
+                />
+                <TextField
+                  fullWidth
+                  label="SHOOTING DATE: To"
+                  name="shooting_date_to"
+                  margin="normal"
+                  defaultValue={selectedBooking?.shooting_date_to}
                 />
               </AccordionDetails>
             </Accordion>
@@ -431,7 +482,17 @@ function Booking() {
           </DialogContent>
           <DialogActions>
             <Button onClick={handleClose}>Cancel</Button>
-            <Button type="submit" variant="contained">
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{
+                backgroundColor: "#7e1519",
+                "&:hover": {
+                  backgroundColor: "#fdedd1", // Hover color for the Save button
+                  color: "#7e1519", // Change text color on hover for better contrast
+                },
+              }}
+            >
               Save
             </Button>
           </DialogActions>
@@ -442,4 +503,3 @@ function Booking() {
 }
 
 export default Booking
-

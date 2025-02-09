@@ -1,5 +1,6 @@
-import React from "react"
-import { Link, useLocation } from "react-router-dom"
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import img3 from "../image/loginlogo.jpeg";
 import {
   Box,
   AppBar,
@@ -11,29 +12,62 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
-} from "@mui/material"
-import { Dashboard as DashboardIcon, People, Assignment, Book, Settings, Logout } from "@mui/icons-material"
+} from "@mui/material";
+import { keyframes } from "@mui/system";
+import { Dashboard as DashboardIcon, People, Assignment, Book, Settings, Logout } from "@mui/icons-material";
 
-const drawerWidth = 240
+const drawerWidth = 240;
+
+const pulse = keyframes`
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+`;
 
 function Layout({ children, userRole, onLogout }) {
-  const location = useLocation()
+  const location = useLocation();
 
   const menuItems = [
     { title: "Dashboard", icon: DashboardIcon, path: "/dashboard" },
     { title: "Leads", icon: Assignment, path: "/leads" },
     { title: "Booking", icon: Book, path: "/booking" },
     { title: "Settings", icon: Settings, path: "/settings" },
-  ]
+  ];
 
   if (userRole === "Admin") {
-    menuItems.splice(1, 0, { title: "Employee", icon: People, path: "/users" })
+    menuItems.splice(1, 0, { title: "Employee", icon: People, path: "/users" });
   }
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+      <AppBar
+        position="fixed"
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          backgroundColor: "#ee9121",
+        }}
+      >
         <Toolbar>
+          <Box
+            component="img"
+            src={img3}
+            alt="Adinath Logo"
+            sx={{
+              width: 40,
+              height: 40,
+              marginRight: 2,
+              transition: "transform 0.3s ease-in-out",
+              "&:hover": {
+                animation: `${pulse} 2s infinite ease-in-out`,
+              },
+            }}
+          />
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             AdinathTV Dashboard
           </Typography>
@@ -61,10 +95,10 @@ function Layout({ children, userRole, onLogout }) {
                 to={item.path}
                 selected={location.pathname === item.path}
               >
-                <ListItemIcon>
+                <ListItemIcon sx={{ color: "#7e1519" }}>
                   <item.icon />
                 </ListItemIcon>
-                <ListItemText primary={item.title} />
+                <ListItemText primary={item.title} sx={{ color: "#7e1519" }} />
               </ListItem>
             ))}
           </List>
@@ -75,8 +109,7 @@ function Layout({ children, userRole, onLogout }) {
         {children}
       </Box>
     </Box>
-  )
+  );
 }
 
-export default Layout
-
+export default Layout;

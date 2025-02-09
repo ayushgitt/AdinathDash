@@ -9,6 +9,7 @@ import Booking from "./components/Booking"
 import Settings from "./components/Settings"
 import Welcome from "../src/page/welcome"
 
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [userRole, setUserRole] = useState("")

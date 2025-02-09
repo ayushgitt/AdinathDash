@@ -12,7 +12,9 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
+body {
+  background-color: rgba(253,232,199,255);
+  }
 a {
   font-weight: 500;
   color: #646cff;
@@ -34,6 +36,9 @@ body {
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+}
+h4{
+  color: #7e1519;
 }
 
 button {
