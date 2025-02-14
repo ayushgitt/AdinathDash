@@ -18,13 +18,13 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  MenuItem,
 } from "@mui/material"
 import { styled } from "@mui/material/styles"
-import { DatePicker } from "@mui/x-date-pickers/DatePicker" // Import DatePicker
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider" // Import LocalizationProvider
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns" // Import AdapterDateFns
+import { DatePicker } from "@mui/x-date-pickers/DatePicker"
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 
-// Styled components for custom table elements
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   boxShadow: theme.shadows[3],
@@ -36,9 +36,9 @@ const StyledTable = styled(Table)(({ theme }) => ({
 }))
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
-  backgroundColor: "#fdedd1", // Background color for table entries
+  backgroundColor: "#fdedd1",
   "&:nth-of-type(odd)": {
-    backgroundColor: "#fdedd1", // Ensure odd rows also have the same color
+    backgroundColor: "#fdedd1",
   },
   "&:hover": {
     backgroundColor: theme.palette.action.selected,
@@ -49,10 +49,17 @@ function LeadManagement() {
   const [leads, setLeads] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
-  const [eventDate, setEventDate] = useState(null) // State for DatePicker
+  const [eventDate, setEventDate] = useState(null)
+  const [dedicatedPersons, setDedicatedPersons] = useState([]) // List of Maharaj Ji/Mata Ji
+  const [selectedDedicatedPerson, setSelectedDedicatedPerson] = useState("") // Selected Maharaj Ji/Mata Ji
+  const [salesPersons, setSalesPersons] = useState([]) // List of sales persons
+  const [selectedSalesPerson, setSelectedSalesPerson] = useState("") // Selected sales person ID
+  const [salesPersonContact, setSalesPersonContact] = useState("") // Corresponding contact number
 
   useEffect(() => {
     fetchLeads()
+    fetchDedicatedPersons()
+    fetchSalesPersons()
   }, [])
 
   const fetchLeads = async () => {
@@ -64,16 +71,53 @@ function LeadManagement() {
     }
   }
 
+  const fetchDedicatedPersons = async () => {
+    try {
+      const response = await axios.get("https://adinath-api.rashtechnologies.com/dedicated-persons")
+      setDedicatedPersons(response.data)
+    } catch (error) {
+      console.error("Error fetching dedicated persons:", error)
+    }
+  }
+
+  const fetchSalesPersons = async () => {
+    try {
+      const response = await axios.get("https://adinath-api.rashtechnologies.com/sales")
+      setSalesPersons(response.data)
+    } catch (error) {
+      console.error("Error fetching sales persons:", error)
+    }
+  }
+
+  const fetchSalesPersonByDedicatedPerson = async (person) => {
+    try {
+      const response = await axios.get(`https://adinath-api.rashtechnologies.com/sales/${person}`)
+      if (response.data.length > 0) {
+        return response.data[0] // Return the first matching sales person
+      }
+      return null
+    } catch (error) {
+      console.error("Error fetching sales person:", error)
+      return null
+    }
+  }
+
   const handleEdit = (lead) => {
     setSelectedLead(lead)
-    setEventDate(lead.event_date ? new Date(lead.event_date) : null) // Set initial date for DatePicker
+    setEventDate(lead.event_date ? new Date(lead.event_date) : null)
+    setSelectedDedicatedPerson(lead.maharaj_mandir || "")
+    setSelectedSalesPerson(lead.sales_person_1 || "")
+    setSalesPersonContact(lead.sales_person_contact_1 || "")
     setOpenDialog(true)
   }
 
   const handleClose = () => {
     setOpenDialog(false)
     setSelectedLead(null)
-    setEventDate(null) // Reset date on close
+    setEventDate(null)
+    setSelectedDedicatedPerson("")
+    setSelectedSalesPerson("")
+    setSalesPersonContact("")
   }
 
   const handleSave = async (event) => {
@@ -81,8 +125,8 @@ function LeadManagement() {
     const formData = new FormData(event.target)
     const leadData = Object.fromEntries(formData.entries())
 
-    // Add the event date from the DatePicker to the lead data
     leadData.event_date = eventDate ? eventDate.toISOString().split("T")[0] : ""
+    leadData.sales_person_1 = selectedSalesPerson // Send only the employee_id to the backend
 
     try {
       if (selectedLead) {
@@ -97,6 +141,36 @@ function LeadManagement() {
     }
   }
 
+  const handleDedicatedPersonChange = async (e) => {
+    const person = e.target.value
+    setSelectedDedicatedPerson(person)
+
+    if (person) {
+      const salesPerson = await fetchSalesPersonByDedicatedPerson(person)
+      if (salesPerson) {
+        const salesPersonField = e.target.form.elements.namedItem("sales_person_1")
+        const salesPersonContactField = e.target.form.elements.namedItem("sales_person_contact_1")
+        if (salesPersonField && salesPersonContactField) {
+          salesPersonField.value = salesPerson.employee_name
+          salesPersonContactField.value = salesPerson.phone
+        }
+      }
+    }
+  }
+
+  const handleSalesPersonChange = (e) => {
+    const selectedId = e.target.value
+    setSelectedSalesPerson(selectedId)
+
+    // Find the selected sales person and set the contact number
+    const selectedPerson = salesPersons.find((person) => person.employee_id === parseInt(selectedId))
+    if (selectedPerson) {
+      setSalesPersonContact(selectedPerson.phone)
+    } else {
+      setSalesPersonContact("")
+    }
+  }
+
   return (
     <Box sx={{ height: "100vh", overflow: "hidden", p: 3, backgroundColor: "rgba(253,232,199,255)" }}>
       <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -107,8 +181,8 @@ function LeadManagement() {
           sx={{
             backgroundColor: "#7e1519",
             "&:hover": {
-              backgroundColor: "#fdedd1", // Hover color for the "Add Lead" button
-              color: "#7e1519", // Change text color on hover for better contrast
+              backgroundColor: "#fdedd1",
+              color: "#7e1519",
             },
           }}
         >
@@ -203,27 +277,44 @@ function LeadManagement() {
               sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
             />
             <TextField
+              select
               fullWidth
               label="Maharaj ji / Mandir ji"
               name="maharaj_mandir"
               margin="normal"
-              defaultValue={selectedLead?.maharaj_mandir}
+              value={selectedDedicatedPerson}
+              onChange={handleDedicatedPersonChange}
               sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
+            >
+              {dedicatedPersons.map((person) => (
+                <MenuItem key={person} value={person}>
+                  {person}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
+              select
               fullWidth
               label="Sales Person 1"
               name="sales_person_1"
               margin="normal"
-              defaultValue={selectedLead?.sales_person_1}
+              value={selectedSalesPerson}
+              onChange={handleSalesPersonChange}
               sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
+            >
+              {salesPersons.map((person) => (
+                <MenuItem key={person.employee_id} value={person.employee_id}>
+                  {`${person.employee_id} - ${person.employee_name}`}
+                </MenuItem>
+              ))}
+            </TextField>
             <TextField
               fullWidth
               label="Sales Person Contact 1"
               name="sales_person_contact_1"
               margin="normal"
-              defaultValue={selectedLead?.sales_person_contact_1}
+              value={salesPersonContact}
+              disabled
               sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
             />
           </DialogContent>
