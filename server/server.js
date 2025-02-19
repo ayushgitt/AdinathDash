@@ -1,7 +1,11 @@
 import express from "express"
 import { createPool } from "mysql2/promise"
 import { hash, compare } from "bcrypt"
+import bcrypt from "bcrypt";                         //added this bcrypt
+import pkg from 'body-parser';                         //added this also
+const { json } = pkg;											  
 import bodyParser from "body-parser"
+import axios from "axios"; // For ES Module
 import cors from "cors"
 import dotenv from "dotenv"
 
@@ -10,12 +14,13 @@ dotenv.config()
 const app = express()
 
 const corsOptions = {
-  origin: true,
-  credentials: true,
-  optionsSuccessStatus: 200,
+    origin: true,
+    credentials: true,
+    optionsSuccessStatus: 200,
 }
-app.use(cors(corsOptions))
+app.use(cors(corsOptions));
 app.use(bodyParser.json())
+
 
 // Database configuration
 const dbConfig = {
@@ -24,14 +29,15 @@ const dbConfig = {
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 }
-let pool
+let pool;
 
 // Utility to create a connection pool
-try {
-  pool = createPool(dbConfig)
-  console.log("connect to pokemon")
-} catch (E) {
-  console.log(E)
+try{
+   pool = createPool(dbConfig) 
+  console.log("connect to pokemon");
+}
+catch(E){
+  console.log(E);
 }
 // Get all users
 app.get("/users", async (req, res) => {
@@ -81,8 +87,7 @@ app.put("/users/:id", async (req, res) => {
     role,
     manager_id,
     status,
-    mandir,
-    maharaj_ji,
+    Dedicated_Person,                           //in place of mandir,maharaj ji
     status_changed_by,
     login_access,
   } = req.body
@@ -95,7 +100,7 @@ app.put("/users/:id", async (req, res) => {
             UPDATE AdinathTV_Employees
             SET employee_name = ?, phone = ?, email = ?, address = ?, work_email = ?,
                 department_id = ?, username = ?, passwd = COALESCE(?, passwd), role = ?, manager_id = ?,
-                status = ?, mandir = ?, maharaj_ji = ?, status_changed_by = ?, login_access = ?
+                status = ?, Dedicated_Person = ?, status_changed_by = ?, login_access = ?
             WHERE employee_id = ?`
     const params = [
       employee_name,
@@ -109,8 +114,7 @@ app.put("/users/:id", async (req, res) => {
       role || null,
       manager_id || null,
       status || null,
-      mandir || null,
-      maharaj_ji || null,
+      Dedicated_Person  || null,                         //in place of maharaj ji and mandir
       status_changed_by || null,
       login_access || false,
       id,
@@ -149,8 +153,7 @@ app.post("/users", async (req, res) => {
     role,
     manager_id,
     status,
-    mandir,
-    maharaj_ji,
+    Dedicated_Person,                   //change in place of maharaj and mandir
     status_changed_by,
     login_access,
   } = req.body
@@ -161,9 +164,9 @@ app.post("/users", async (req, res) => {
     const query = `
             INSERT INTO AdinathTV_Employees (
                 employee_name, phone, email, address, work_email, status,
-                status_changed_by, department_id, manager_id, maharaj_ji,
-                mandir, role, login_access, username, passwd
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                status_changed_by, department_id, manager_id, Dedicated_Person,
+                role, login_access, username, passwd
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) `
     const params = [
       employee_name,
       phone,
@@ -174,8 +177,7 @@ app.post("/users", async (req, res) => {
       status_changed_by || null,
       department_id,
       manager_id || null,
-      maharaj_ji || null,
-      mandir || null,
+      Dedicated_Person || null,                                                         //in place mandir,maharaj ji
       role || null,
       login_access || false,
       username || null,
@@ -200,6 +202,52 @@ app.get("/leads", async (req, res) => {
   }
 })
 
+// get list of maharaj ji, mata ji
+app.get("/dedicated_persons", async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            "SELECT GROUP_CONCAT(Dedicated_Person) AS persons FROM AdinathTV_Employees WHERE department_id = 1 AND status NOT LIKE 'Deleted'"
+        );
+
+        if (!rows || rows.length === 0 || !rows[0].persons) {
+            return res.json([]);
+        }
+
+        // Split the concatenated string into an array and remove duplicates
+        const personsList = [...new Set(rows[0].persons.split(","))].map(person => person.trim());
+
+        res.json(personsList);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get sales
+app.get("/sales", async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            "SELECT employee_id, employee_name,phone FROM AdinathTV_Employees WHERE department_id = 1 AND status NOT LIKE 'Deleted'"
+        );
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get sales by specfic person
+app.get("/sales/:person", async (req, res) => {
+    const { person } = req.params;
+    try {
+        const [rows] = await pool.query(
+            "SELECT employee_id, employee_name,phone FROM AdinathTV_Employees WHERE department_id = 1 AND FIND_IN_SET(?, Dedicated_Person) AND status NOT LIKE 'Deleted'",
+            [person]
+        );
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Retrieve HOCs for a specific lead
 app.get("/hocs/:leadId", async (req, res) => {
   const { leadId } = req.params
@@ -211,43 +259,110 @@ app.get("/hocs/:leadId", async (req, res) => {
     res.status(500).json({ error: err.message })
   }
 })
-
+// Add a new helper function to validate sales_person_1
+async function validateSalesPerson(salesPersonId) {					               //added new
+    try {
+        const [rows] = await pool.query(
+            "SELECT employee_id FROM AdinathTV_Employees WHERE employee_id = ? AND status NOT LIKE 'Deleted'",
+            [salesPersonId]
+        );
+        return rows.length > 0;
+    } catch (error) {
+        console.error("Error validating sales person:", error);
+        return false;
+    }
+} 
+// Function to send WhatsApp message
+const sendWhatsAppMessage = async (sales_person_contact_1,leadId, leadName, leadContact, eventName, eventDate, maharajJi) => {
+    const GRAPH_API_TOKEN = "EAAGOzb1SDB8BO9xNrBfP8Bv84gJ395wWPBZAaRqXvJ9KxOG5W2QcigxWI6TOZBsNqZCdxjnGndJZCp1c7UZCOo41fnvCdU56bkd4EJZAZBFJE851bHTZBZA6KFnJZBRGBfSTF2Qa8VUcfcLmQh0716z8MVQHvAzlLIZAlRF2bsf8dlNXC4zty5FygrGZBYEoAnae5E6dSgZDZD"
+    const payload = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: sales_person_contact_1, // Sending to lead's phone number
+      type: "template",
+      template: {
+        name: "leads_confirm", // Use the registered WhatsApp template name
+        language: { code: "en_US" },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: leadId.toString() },
+              { type: "text", text: leadName },
+              { type: "text", text: leadContact },
+              { type: "text", text: eventName },
+              { type: "text", text: eventDate },
+              { type: "text", text: maharajJi },
+            ]
+          }
+        ]
+      }
+    };
+  
+    try {
+      const response = await axios.post(
+        "https://graph.facebook.com/v18.0/460818373792230/messages",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${GRAPH_API_TOKEN}`,
+            "Content-Type": "application/json",
+          }
+        }
+      );
+      const msgId = response.data.messages[0].id; // Extract message ID
+      const sentPayload = JSON.stringify(payload); // Store the request payload
+      // Store msg_id and sent_payload in META_Webhook table
+        pool.query(
+            `INSERT INTO META_Webhook (msg_id,original_payload_sent) VALUES (?,?)`,
+            [msgId,sentPayload],
+            (dbErr, dbResult) => {
+            if (dbErr) {
+                console.error("Error storing message ID:", dbErr);
+            } else {
+                console.log("Message ID stored successfully:", msgId);
+            }
+            }
+        );
+      console.log("WhatsApp message sent:", response.data);
+    } catch (error) {
+      console.error("Error sending WhatsApp message:", error.response?.data || error.message);
+    }
+  };
 // Add a new lead
 app.post("/leads", async (req, res) => {
   const {
-    date,
-    leads_generated_by,
-    programme_name,
-    maharaj_mataji_name,
-    lead_handled_by,
+    lead_name,
+    event_name,
+    event_date,
+    poc_no,
     location,
-    start_date,
-    end_date,
-    contact,
-    status,
+    maharaj_mandir,
+    sales_person_1,
+    sales_person_contact_1,
+    hocs,
   } = req.body
-
+// Validate sales_person_1
+    const isValidSalesPerson = await validateSalesPerson(sales_person_1);
+    if (!isValidSalesPerson) {
+        return res.status(400).json({ error: "Invalid sales_person_1: Employee ID does not exist." });
+    }
   try {
     const [result] = await pool.query(
       `INSERT INTO AdinathTV_Leads 
-      (date, leads_generated_by, programme_name, maharaj_mataji_name, lead_handled_by, 
-      location, start_date, end_date, contact, status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        date,
-        leads_generated_by,
-        programme_name,
-        maharaj_mataji_name,
-        lead_handled_by,
-        location,
-        start_date,
-        end_date,
-        contact,
-        status,
-      ],
+            (lead_name, event_name, event_date, poc_no, location, maharaj_mandir, sales_person_1, sales_person_contact_1) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [lead_name, event_name, event_date, poc_no, location, maharaj_mandir, sales_person_1, sales_person_contact_1],
     )
 
-    res.status(201).json({ message: "Lead added successfully.", leadId: result.insertId })
+    const leadId = result.insertId
+
+    if (hocs && hocs.length > 0) {
+      const hocValues = hocs.map((hoc) => [leadId, hoc.host_name, hoc.poc_contact])
+      await pool.query("INSERT INTO AdinathTV_Host_POC (lead_id, host_name, poc_contact) VALUES ?", [hocValues])
+    }
+    sendWhatsAppMessage(sales_person_contact_1,leadId, lead_name, poc_no, event_name, event_date, maharaj_mandir);
+    res.status(201).json({ message: "Lead and HOCs added successfully.", leadId })
   } catch (err) {
     console.error("Error adding lead:", err)
     res.status(500).json({ error: err.message })
@@ -258,39 +373,41 @@ app.post("/leads", async (req, res) => {
 app.put("/leads/:leadId", async (req, res) => {
   const { leadId } = req.params
   const {
-    date,
-    leads_generated_by,
-    programme_name,
-    maharaj_mataji_name,
-    lead_handled_by,
+    lead_name,
+    event_name,
+    event_date,
+    poc_no,
     location,
-    start_date,
-    end_date,
-    contact,
-    status,
+    maharaj_mandir,
+    sales_person_1,
+    sales_person_contact_1,
+    hocs,
   } = req.body
 
   try {
     await pool.query(
       `UPDATE AdinathTV_Leads 
-      SET date = ?, leads_generated_by = ?, programme_name = ?, maharaj_mataji_name = ?, 
-      lead_handled_by = ?, location = ?, start_date = ?, end_date = ?, contact = ?, status = ? 
-      WHERE lead_id = ?`,
+            SET lead_name = ?, event_name = ?, event_date = ?, poc_no = ?, location = ?, maharaj_mandir = ?, 
+            sales_person_1 = ?, sales_person_contact_1 = ? 
+            WHERE lead_id = ?`,
       [
-        date,
-        leads_generated_by,
-        programme_name,
-        maharaj_mataji_name,
-        lead_handled_by,
+        lead_name,
+        event_name,
+        event_date,
+        poc_no,
         location,
-        start_date,
-        end_date,
-        contact,
-        status,
+        maharaj_mandir,
+        sales_person_1,
+        sales_person_contact_1,
         leadId,
       ],
     )
 
+    await pool.query("DELETE FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
+    if (hocs && hocs.length > 0) {
+      const hocValues = hocs.map((hoc) => [leadId, hoc.host_name, hoc.poc_contact])
+      await pool.query("INSERT INTO AdinathTV_Host_POC (lead_id, host_name, poc_contact) VALUES ?", [hocValues])
+    }
     res.json({ message: "Lead updated successfully." })
   } catch (err) {
     console.error("Error updating lead:", err)
@@ -304,7 +421,10 @@ app.delete("/leads/:leadId", async (req, res) => {
 
   try {
     await pool.query("DELETE FROM AdinathTV_Leads WHERE lead_id = ?", [leadId])
-    res.json({ message: "Lead deleted successfully." })
+
+    await pool.query("DELETE FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
+
+    res.json({ message: "Lead and associated HOCs deleted successfully." })
   } catch (err) {
     console.error("Error deleting lead:", err)
     res.status(500).json({ error: err.message })
@@ -471,27 +591,7 @@ app.get("/lead-stats", async (req, res) => {
 })
 
 // Start server
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3017
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
-})
-
-// Add this after the existing table creation queries
-pool
-  .query(`
-  CREATE TABLE IF NOT EXISTS AdinathTV_Leads (
-    lead_id INT AUTO_INCREMENT PRIMARY KEY,
-    date DATE,
-    leads_generated_by VARCHAR(255),
-    programme_name VARCHAR(255),
-    maharaj_mataji_name VARCHAR(255),
-    lead_handled_by VARCHAR(255),
-    location VARCHAR(255),
-    start_date DATE,
-    end_date DATE,
-    contact VARCHAR(255),
-    status VARCHAR(50)
-  )
-`)
-  .catch((err) => console.error("Error creating table:", err))
-
+});

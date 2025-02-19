@@ -18,27 +18,30 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  MenuItem,
+  Grid,
 } from "@mui/material"
 import { styled } from "@mui/material/styles"
-import { DatePicker } from "@mui/x-date-pickers/DatePicker" // Import DatePicker
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider" // Import LocalizationProvider
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns" // Import AdapterDateFns
+import { DatePicker } from "@mui/x-date-pickers/DatePicker"
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 
-// Styled components for custom table elements
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   boxShadow: theme.shadows[3],
   marginTop: theme.spacing(2),
+  height: "65vh",
 }))
 
 const StyledTable = styled(Table)(({ theme }) => ({
   minWidth: 650,
+  overflowY: "scroll",
 }))
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
-  backgroundColor: "#fdedd1", // Background color for table entries
+  backgroundColor: "#fdedd1",
   "&:nth-of-type(odd)": {
-    backgroundColor: "#fdedd1", // Ensure odd rows also have the same color
+    backgroundColor: "#fdedd1",
   },
   "&:hover": {
     backgroundColor: theme.palette.action.selected,
@@ -49,10 +52,20 @@ function LeadManagement() {
   const [leads, setLeads] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
   const [selectedLead, setSelectedLead] = useState(null)
-  const [eventDate, setEventDate] = useState(null) // State for DatePicker
+  const [eventDate, setEventDate] = useState(null)
+  const [dedicatedPersons, setDedicatedPersons] = useState([])
+  const [selectedDedicatedPerson, setSelectedDedicatedPerson] = useState("")
+  const [salesPersons, setSalesPersons] = useState([])
+  const [selectedSalesPerson, setSelectedSalesPerson] = useState("")
+  const [salesPersonContact, setSalesPersonContact] = useState("")
+  const [step, setStep] = useState(1)
+  const [hosts, setHosts] = useState([{ host_name: "", poc_contact: "" }])
+  const [leadData, setLeadData] = useState({})
 
   useEffect(() => {
     fetchLeads()
+    fetchDedicatedPersons()
+    fetchSalesPersons()
   }, [])
 
   const fetchLeads = async () => {
@@ -64,37 +77,142 @@ function LeadManagement() {
     }
   }
 
+  const fetchDedicatedPersons = async () => {
+    try {
+      const response = await axios.get("https://adinath-api.rashtechnologies.com/dedicated-persons")
+      setDedicatedPersons(response.data)
+    } catch (error) {
+      console.error("Error fetching dedicated persons:", error)
+    }
+  }
+
+  const fetchSalesPersons = async () => {
+    try {
+      const response = await axios.get("https://adinath-api.rashtechnologies.com/sales")
+      setSalesPersons(response.data)
+    } catch (error) {
+      console.error("Error fetching sales persons:", error)
+    }
+  }
+
+  const fetchSalesPersonByDedicatedPerson = async (person) => {
+    try {
+      const response = await axios.get(`https://adinath-api.rashtechnologies.com/sales/${person}`)
+      console.log(response.data);
+      if (response.data.length > 0) {
+        return response.data[0]
+      }
+      return null
+    } catch (error) {
+      console.error("Error fetching sales person:", error)
+      return null
+    }
+  }
+
   const handleEdit = (lead) => {
     setSelectedLead(lead)
-    setEventDate(lead.event_date ? new Date(lead.event_date) : null) // Set initial date for DatePicker
+    setEventDate(lead.event_date ? new Date(lead.event_date) : null)
+    setSelectedDedicatedPerson(lead.maharaj_mandir || "")
+    setSelectedSalesPerson(lead.sales_person_1 || "")
+    setSalesPersonContact(lead.sales_person_contact_1 || "")
+    setHosts(lead.hocs || [{ host_name: "", poc_contact: "" }])
+    setLeadData(lead)
     setOpenDialog(true)
+    setStep(1)
   }
 
   const handleClose = () => {
     setOpenDialog(false)
     setSelectedLead(null)
-    setEventDate(null) // Reset date on close
+    setEventDate(null)
+    setSelectedDedicatedPerson("")
+    setSelectedSalesPerson("")
+    setSalesPersonContact("")
+    setStep(1)
+    setHosts([{ host_name: "", poc_contact: "" }])
+    setLeadData({})
+  }
+
+  const handleNext = (event) => {
+    event.preventDefault()
+    const formData = new FormData(event.target)
+    const step1Data = Object.fromEntries(formData.entries())
+
+    step1Data.event_date = eventDate ? eventDate.toISOString().split("T")[0] : ""
+    step1Data.sales_person_1 = selectedSalesPerson
+    step1Data.sales_person_contact_1 = salesPersonContact
+
+    setLeadData({ ...leadData, ...step1Data })
+    setStep(2)
   }
 
   const handleSave = async (event) => {
     event.preventDefault()
+
     const formData = new FormData(event.target)
-    const leadData = Object.fromEntries(formData.entries())
+    const step2Data = Object.fromEntries(formData.entries())
 
-    // Add the event date from the DatePicker to the lead data
-    leadData.event_date = eventDate ? eventDate.toISOString().split("T")[0] : ""
+    const finalLeadData = {
+      ...leadData,
+      ...step2Data,
+      event_date: eventDate ? eventDate.toISOString().split("T")[0] : "",
+      sales_person_1: selectedSalesPerson,
+      sales_person_contact_1: salesPersonContact,
+      hocs: hosts.map((host) => ({
+        host_name: host.host_name,
+        poc_contact: host.poc_contact,
+      })),
+    }
 
+    console.log(finalLeadData)
     try {
       if (selectedLead) {
-        await axios.put(`${import.meta.env.VITE_API_URL}/leads/${selectedLead.lead_id}`, leadData)
+        await axios.put(`${import.meta.env.VITE_API_URL}/leads/${selectedLead.lead_id}`, finalLeadData)
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL}/leads`, leadData)
+        await axios.post(`${import.meta.env.VITE_API_URL}/leads`, finalLeadData)
       }
       fetchLeads()
       handleClose()
     } catch (error) {
       console.error("Error saving lead:", error)
     }
+  }
+
+  const handleDedicatedPersonChange = async (e) => {
+    const person = e.target.value
+    setSelectedDedicatedPerson(person)
+
+    if (person) {
+      const salesPerson = await fetchSalesPersonByDedicatedPerson(person)
+      if (salesPerson) {
+        setSelectedSalesPerson(salesPerson.employee_id)
+        setSalesPersonContact(salesPerson.phone)
+      }
+    }
+  }
+
+  const handleSalesPersonChange = (e) => {
+    const selectedId = e.target.value
+    setSelectedSalesPerson(selectedId)
+
+    const selectedPerson = salesPersons.find((person) => person.employee_id === Number.parseInt(selectedId))
+    if (selectedPerson) {
+      setSalesPersonContact(selectedPerson.phone)
+    } else {
+      setSalesPersonContact("")
+    }
+  }
+
+  const handleAddHost = () => {
+    if (hosts.length < 7) {
+      setHosts([...hosts, { host_name: "", poc_contact: "" }])
+    }
+  }
+
+  const handleHostChange = (index, field, value) => {
+    const newHosts = [...hosts]
+    newHosts[index][field] = value
+    setHosts(newHosts)
   }
 
   return (
@@ -107,8 +225,8 @@ function LeadManagement() {
           sx={{
             backgroundColor: "#7e1519",
             "&:hover": {
-              backgroundColor: "#fdedd1", // Hover color for the "Add Lead" button
-              color: "#7e1519", // Change text color on hover for better contrast
+              backgroundColor: "#fdedd1",
+              color: "#7e1519",
             },
           }}
         >
@@ -126,10 +244,12 @@ function LeadManagement() {
               <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Event Date</TableCell>
               <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>POC No.</TableCell>
               <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Sales Person 1</TableCell>
+              {/* <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Host by</TableCell> */}
+              {/* <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Host Contact</TableCell> */}
               <TableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Actions</TableCell>
             </TableRow>
           </TableHead>
-          <TableBody>
+          <TableBody sx={{ height: "50vh", overflowY: "scroll", overflowX: "hidden" }}>
             {leads.map((lead) => (
               <StyledTableRow key={lead.lead_id}>
                 <TableCell>{lead.lead_id}</TableCell>
@@ -138,6 +258,8 @@ function LeadManagement() {
                 <TableCell>{lead.event_date}</TableCell>
                 <TableCell>{lead.poc_no}</TableCell>
                 <TableCell>{lead.sales_person_1}</TableCell>
+                {/* <TableCell>{lead.host_name}</TableCell> */}
+                {/* <TableCell>{lead.poc_contact}</TableCell> */}
                 <TableCell>
                   <Button variant="outlined" onClick={() => handleEdit(lead)}>
                     Edit
@@ -153,97 +275,174 @@ function LeadManagement() {
         <DialogTitle sx={{ backgroundColor: "#fdedd1", color: "#7e1519" }}>
           {selectedLead ? "Edit Lead" : "Add Lead"}
         </DialogTitle>
-        <form onSubmit={handleSave}>
+        <form onSubmit={step === 1 ? handleNext : handleSave}>
           <DialogContent sx={{ backgroundColor: "#fdedd1" }}>
-            <TextField
-              fullWidth
-              label="Lead Name"
-              name="lead_name"
-              margin="normal"
-              defaultValue={selectedLead?.lead_name}
-              sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
-            <TextField
-              fullWidth
-              label="Event Name"
-              name="event_name"
-              margin="normal"
-              defaultValue={selectedLead?.event_name}
-              sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
-            <LocalizationProvider dateAdapter={AdapterDateFns}>
-              <DatePicker
-                label="Event Date"
-                value={eventDate}
-                onChange={(newValue) => setEventDate(newValue)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    margin="normal"
-                    sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+            {step === 1 && (
+              <>
+                <TextField
+                  fullWidth
+                  label="Lead Name"
+                  name="lead_name"
+                  margin="normal"
+                  defaultValue={selectedLead?.lead_name}
+                  sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                />
+                <TextField
+                  fullWidth
+                  label="Event Name"
+                  name="event_name"
+                  margin="normal"
+                  defaultValue={selectedLead?.event_name}
+                  sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                />
+                <LocalizationProvider dateAdapter={AdapterDateFns}>
+                  <DatePicker
+                    label="Event Date"
+                    value={eventDate}
+                    onChange={(newValue) => setEventDate(newValue)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        fullWidth
+                        margin="normal"
+                        sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                      />
+                    )}
                   />
+                </LocalizationProvider>
+                <TextField
+                  fullWidth
+                  label="POC No."
+                  name="poc_no"
+                  margin="normal"
+                  defaultValue={selectedLead?.poc_no}
+                  sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                />
+                <TextField
+                  fullWidth
+                  label="Location"
+                  name="location"
+                  margin="normal"
+                  defaultValue={selectedLead?.location}
+                  sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                />
+                <TextField
+                  select
+                  fullWidth
+                  label="Dedicated Person"
+                  name="maharaj_mandir"
+                  value={selectedDedicatedPerson}
+                  margin="normal"
+                  sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                  onChange={handleDedicatedPersonChange}
+                >
+                  {dedicatedPersons.map((person) => (
+                    <MenuItem key={person} value={person}>
+                      {person}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  fullWidth
+                  label="Sales Person 1"
+                  name="sales_person_1"
+                  value={selectedSalesPerson}
+                  margin="normal"
+                  sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                  disabled
+                />
+                <TextField
+                  fullWidth
+                  label="Sales Person Contact 1"
+                  name="sales_person_contact_1"
+                  value={salesPersonContact}
+                  margin="normal"
+                  sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                  disabled
+                />
+              </>
+            )}
+
+            {step === 2 && (
+              <>
+                {hosts.map((host, index) => (
+                  <Grid container spacing={2} key={index}>
+                    <Grid item xs={6}>
+                      <TextField
+                        fullWidth
+                        label="Host by"
+                        name={`host_name_${index}`}
+                        value={host.host_name}
+                        margin="normal"
+                        onChange={(e) => handleHostChange(index, "host_name", e.target.value)}
+                        sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                      />
+                    </Grid>
+                    <Grid item xs={6}>
+                      <TextField
+                        fullWidth
+                        label="Host Contact"
+                        name={`poc_contact_${index}`}
+                        value={host.poc_contact}
+                        margin="normal"
+                        onChange={(e) => handleHostChange(index, "poc_contact", e.target.value)}
+                        sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                      />
+                    </Grid>
+                  </Grid>
+                ))}
+                {hosts.length < 7 && (
+                  <Button onClick={handleAddHost} sx={{ color: "#7e1519", mt: 2 }}>
+                    Add Host
+                  </Button>
                 )}
-              />
-            </LocalizationProvider>
-            <TextField
-              fullWidth
-              label="POC No."
-              name="poc_no"
-              margin="normal"
-              defaultValue={selectedLead?.poc_no}
-              sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
-            <TextField
-              fullWidth
-              label="Location"
-              name="location"
-              margin="normal"
-              defaultValue={selectedLead?.location}
-              sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
-            <TextField
-              fullWidth
-              label="Maharaj ji / Mandir ji"
-              name="maharaj_mandir"
-              margin="normal"
-              defaultValue={selectedLead?.maharaj_mandir}
-              sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
-            <TextField
-              fullWidth
-              label="Sales Person 1"
-              name="sales_person_1"
-              margin="normal"
-              defaultValue={selectedLead?.sales_person_1}
-              sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
-            <TextField
-              fullWidth
-              label="Sales Person Contact 1"
-              name="sales_person_contact_1"
-              margin="normal"
-              defaultValue={selectedLead?.sales_person_contact_1}
-              sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
-            />
+              </>
+            )}
           </DialogContent>
           <DialogActions sx={{ backgroundColor: "#fdedd1" }}>
-            <Button onClick={handleClose} sx={{ color: "#7e1519" }}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              sx={{
-                backgroundColor: "#7e1519",
-                "&:hover": {
-                  backgroundColor: "#fdedd1",
-                  color: "#7e1519",
-                },
-              }}
-            >
-              Save
-            </Button>
+            {step === 1 && (
+              <>
+                <Button onClick={handleClose} sx={{ color: "#7e1519" }}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#7e1519",
+                    "&:hover": {
+                      backgroundColor: "#fdedd1",
+                      color: "#7e1519",
+                    },
+                  }}
+                >
+                  Next
+                </Button>
+              </>
+            )}
+            {step === 2 && (
+              <>
+                <Button onClick={() => setStep(1)} sx={{ color: "#7e1519" }}>
+                  Back
+                </Button>
+                <Button onClick={handleClose} sx={{ color: "#7e1519" }}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  sx={{
+                    backgroundColor: "#7e1519",
+                    "&:hover": {
+                      backgroundColor: "#fdedd1",
+                      color: "#7e1519",
+                    },
+                  }}
+                >
+                  Save
+                </Button>
+              </>
+            )}
           </DialogActions>
         </form>
       </Dialog>
@@ -252,3 +451,4 @@ function LeadManagement() {
 }
 
 export default LeadManagement
+

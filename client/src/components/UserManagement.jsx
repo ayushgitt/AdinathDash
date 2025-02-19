@@ -36,7 +36,8 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   boxShadow: theme.shadows[3],
   marginTop: theme.spacing(2),
-  overflow: "hidden",
+  overflowY: "scroll",
+  height:"70vh",
   maxWidth: "100%", // Prevent horizontal scrolling
   "& .MuiTable-root": {
     tableLayout: "fixed", // Fixed table layout to prevent horizontal scrolling
@@ -108,6 +109,7 @@ function UserManagement() {
       setUsers(response.data)
     } catch (error) {
       console.error("Error fetching users:", error)
+      alert("Failed to fetch users. Please try again.")
     }
   }
 
@@ -117,15 +119,18 @@ function UserManagement() {
       setDepartments(response.data)
     } catch (error) {
       console.error("Error fetching departments:", error)
+      alert("Failed to fetch departments. Please try again.")
     }
   }
 
   const fetchManagers = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/managers`)
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/managers`);
+      console.log(response.data);
       setManagers(response.data)
     } catch (error) {
       console.error("Error fetching managers:", error)
+      alert("Failed to fetch managers. Please try again.")
     }
   }
 
@@ -138,6 +143,7 @@ function UserManagement() {
     setOpenDialog(false)
     setSelectedUser(null)
     setFormErrors({})
+    setShowCredentials(false)
   }
 
   const handleSave = async (event) => {
@@ -149,10 +155,9 @@ function UserManagement() {
     const errors = {}
     if (!userData.employee_name) errors.employee_name = "Employee name is required"
     if (!userData.phone) errors.phone = "Phone number is required"
-    if (!userData.email) errors.email = "Email is required"
-    if (userData.email && !/\S+@\S+\.\S+/.test(userData.email)) errors.email = "Invalid email format"
     if (!userData.department_id) errors.department_id = "Department is required"
     if (!userData.role) errors.role = "Role is required"
+    if (!userData.Dedicated_Person) errors.Dedicated_Person='Required fields'
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
@@ -160,15 +165,32 @@ function UserManagement() {
     }
 
     try {
-      if (selectedUser) {
-        await axios.put(`${import.meta.env.VITE_API_URL}/users/${selectedUser.employee_id}`, userData)
+      const response = selectedUser
+        ? await axios.put(`${import.meta.env.VITE_API_URL}/users/${selectedUser.employee_id}`, userData)
+        : await axios.post(`${import.meta.env.VITE_API_URL}/users`, userData)
+
+      if (response.status === 200 || response.status === 201) {
+        await fetchUsers() // Refresh the user list
+        handleClose()
       } else {
-        await axios.post(`${import.meta.env.VITE_API_URL}/users`, userData)
+        throw new Error("Unexpected response status")
       }
-      fetchUsers()
-      handleClose()
     } catch (error) {
       console.error("Error saving user:", error)
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("Server responded with:", error.response.data)
+        alert(`Error saving user: ${error.response.data.error || "Unknown error"}`)
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("No response received:", error.request)
+        alert("Error saving user: No response from server")
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error("Error setting up request:", error.message)
+        alert(`Error saving user: ${error.message}`)
+      }
     }
   }
 
@@ -180,11 +202,24 @@ function UserManagement() {
   const handleDelete = async () => {
     try {
       await axios.delete(`${import.meta.env.VITE_API_URL}/users/${userToDelete.employee_id}`)
-      fetchUsers()
+      fetchUsers() // Refresh the user list
       setOpenDeleteDialog(false)
     } catch (error) {
       console.error("Error deleting user:", error)
+      alert("Failed to delete user. Please try again.")
     }
+  }
+
+  // Function to get Mandir/Maharaj ji based on department_id
+  const getMandirMaharajJi = (departmentId) => {
+    const department = departments.find((dept) => dept.department_id === departmentId)
+    return department ? department.department_name : "N/A"
+  }
+
+  // Function to get Mandir/Maharaj ji based on department_id
+  const getDepartments = (departmentId) => {
+    const department = departments.find((dept) => dept.department_id === departmentId)
+    return department ? department.department_name : "N/A"
   }
 
   return (
@@ -197,8 +232,8 @@ function UserManagement() {
           sx={{
             backgroundColor: "#7e1519",
             "&:hover": {
-              backgroundColor: "#fdedd1", // Hover color for the "Add Employee" button
-              color: "#7e1519", // Change text color on hover for better contrast
+              backgroundColor: "#fdedd1",
+              color: "#7e1519",
             },
           }}
         >
@@ -213,13 +248,11 @@ function UserManagement() {
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>ID</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Name</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Phone</StyledTableCell>
-              <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Email</StyledTableCell>
-              <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Address</StyledTableCell>
-              <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Work Email</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Department</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Manager</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Role</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Status</StyledTableCell>
+              <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Mandir/Maharaj ji</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Actions</StyledTableCell>
             </TableRow>
           </TableHead>
@@ -229,13 +262,13 @@ function UserManagement() {
                 <StyledTableCell>{user.employee_id}</StyledTableCell>
                 <StyledTableCell>{user.employee_name}</StyledTableCell>
                 <StyledTableCell>{user.phone}</StyledTableCell>
-                <StyledTableCell>{user.email}</StyledTableCell>
-                <StyledTableCell>{user.address}</StyledTableCell>
-                <StyledTableCell>{user.work_email}</StyledTableCell>
-                <StyledTableCell>{user.department_name}</StyledTableCell>
-                <StyledTableCell>{managers.find((m) => m.employee_id === user.manager_id)?.employee_name || "N/A"}</StyledTableCell>
+                <StyledTableCell>{getDepartments(user.department_id)}</StyledTableCell>
+                <StyledTableCell>
+                  {managers.find((m) => m.employee_id === user.manager_id)?.employee_name || "N/A"}
+                </StyledTableCell>
                 <StyledTableCell>{user.role}</StyledTableCell>
                 <StyledTableCell>{user.status}</StyledTableCell>
+                <StyledTableCell>{user.Dedicated_Person}</StyledTableCell>
                 <StyledTableCell>
                   <IconButton onClick={() => handleEdit(user)} color="primary" size="small">
                     <EditIcon />
@@ -260,7 +293,7 @@ function UserManagement() {
             width: "80%",
             maxHeight: "90vh",
             m: "auto",
-            backgroundColor: "#fdedd1", // Background color for the form
+            backgroundColor: "#fdedd1",
           },
         }}
       >
@@ -290,23 +323,9 @@ function UserManagement() {
                   error={!!formErrors.phone}
                   helperText={formErrors.phone}
                 />
-                <StyledTextField
-                  label="Email"
-                  name="email"
-                  defaultValue={selectedUser?.email}
-                  error={!!formErrors.email}
-                  helperText={formErrors.email}
-                />
-                <StyledTextField
-                  label="Address"
-                  name="address"
-                  defaultValue={selectedUser?.address}
-                />
-                <StyledTextField
-                  label="Work Email"
-                  name="work_email"
-                  defaultValue={selectedUser?.work_email}
-                />
+                <StyledTextField label="Email" name="email" defaultValue={selectedUser?.email} />
+                <StyledTextField label="Address" name="address" defaultValue={selectedUser?.address} />
+                <StyledTextField label="Work Email" name="work_email" defaultValue={selectedUser?.work_email} />
                 <StyledFormControl>
                   <InputLabel>Department</InputLabel>
                   <Select
@@ -351,6 +370,14 @@ function UserManagement() {
                   </Select>
                 </StyledFormControl>
 
+                <StyledTextField
+                  label="Mandir/Maharaj ji"
+                  name="Dedicated_Person"
+                  error={!!formErrors.Dedicated_Person}
+                  defaultValue={selectedUser?.Dedicated_Person}
+                  helperText={formErrors.Dedicated_Person}
+                />
+
                 <FormControlLabel
                   control={
                     <Checkbox checked={showCredentials} onChange={(e) => setShowCredentials(e.target.checked)} />
@@ -371,12 +398,7 @@ function UserManagement() {
             <Button onClick={handleClose} variant="outlined" size="large">
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-              sx={{ backgroundColor: "#7e1519" }} // Background color for the Save button
-            >
+            <Button type="submit" variant="contained" size="large" sx={{ backgroundColor: "#7e1519" }}>
               Save
             </Button>
           </DialogActions>
@@ -405,3 +427,4 @@ function UserManagement() {
 }
 
 export default UserManagement
+
