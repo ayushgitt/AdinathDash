@@ -26,6 +26,10 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
 
+import { DatePicker } from "@mui/x-date-pickers/DatePicker"
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
+
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   boxShadow: theme.shadows[3],
@@ -40,7 +44,9 @@ const StyledTable = styled(Table)(({ theme }) => ({
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: "#fdedd1",
+  backgroundColor: "#fdedd1",
   "&:nth-of-type(odd)": {
+    backgroundColor: "#fdedd1",
     backgroundColor: "#fdedd1",
   },
   "&:hover": {
@@ -64,6 +70,8 @@ function LeadManagement() {
 
   useEffect(() => {
     fetchLeads()
+    fetchDedicatedPersons()
+    fetchSalesPersons()
     fetchDedicatedPersons()
     fetchSalesPersons()
   }, [])
@@ -225,6 +233,8 @@ function LeadManagement() {
           sx={{
             backgroundColor: "#7e1519",
             "&:hover": {
+              backgroundColor: "#fdedd1",
+              color: "#7e1519",
               backgroundColor: "#fdedd1",
               color: "#7e1519",
             },
