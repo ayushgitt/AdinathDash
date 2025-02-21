@@ -55,7 +55,7 @@ app.get("/users", async (req, res) => {
 app.get("/managers", async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT employee_id, employee_name FROM AdinathTV_Employees WHERE department_id = 8",
+      "SELECT employee_id, employee_name FROM AdinathTV_Employees WHERE department_id = 8 AND status NOT LIKE 'Deleted'",
     )
     res.json(rows)
   } catch (err) {
@@ -86,8 +86,7 @@ app.put("/users/:id", async (req, res) => {
     password,
     role,
     manager_id,
-    status,
-    Dedicated_Person,                           //in place of mandir,maharaj ji
+    status,                          //in place of mandir,maharaj ji
     status_changed_by,
     login_access,
   } = req.body
@@ -100,7 +99,7 @@ app.put("/users/:id", async (req, res) => {
             UPDATE AdinathTV_Employees
             SET employee_name = ?, phone = ?, email = ?, address = ?, work_email = ?,
                 department_id = ?, username = ?, passwd = COALESCE(?, passwd), role = ?, manager_id = ?,
-                status = ?, Dedicated_Person = ?, status_changed_by = ?, login_access = ?
+                status = ?,  status_changed_by = ?, login_access = ?
             WHERE employee_id = ?`
     const params = [
       employee_name,
@@ -113,8 +112,7 @@ app.put("/users/:id", async (req, res) => {
       hashedPassword,
       role || null,
       manager_id || null,
-      status || null,
-      Dedicated_Person  || null,                         //in place of maharaj ji and mandir
+      status || null,                        //in place of maharaj ji and mandir
       status_changed_by || null,
       login_access || false,
       id,
@@ -152,8 +150,7 @@ app.post("/users", async (req, res) => {
     password,
     role,
     manager_id,
-    status,
-    Dedicated_Person,                   //change in place of maharaj and mandir
+    status,                   //change in place of maharaj and mandir
     status_changed_by,
     login_access,
   } = req.body
@@ -164,9 +161,9 @@ app.post("/users", async (req, res) => {
     const query = `
             INSERT INTO AdinathTV_Employees (
                 employee_name, phone, email, address, work_email, status,
-                status_changed_by, department_id, manager_id, Dedicated_Person,
+                status_changed_by, department_id, manager_id,
                 role, login_access, username, passwd
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) `
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) `
     const params = [
       employee_name,
       phone,
@@ -176,8 +173,7 @@ app.post("/users", async (req, res) => {
       status || null,
       status_changed_by || null,
       department_id,
-      manager_id || null,
-      Dedicated_Person || null,                                                         //in place mandir,maharaj ji
+      manager_id || null,                                                       //in place mandir,maharaj ji
       role || null,
       login_access || false,
       username || null,
@@ -206,20 +202,81 @@ app.get("/leads", async (req, res) => {
 app.get("/dedicated_persons", async (req, res) => {
     try {
         const [rows] = await pool.query(
-            "SELECT GROUP_CONCAT(Dedicated_Person) AS persons FROM AdinathTV_Employees WHERE department_id = 1 AND status NOT LIKE 'Deleted'"
+            "SELECT * FROM AdinathTV_Special_Persons"
         );
 
-        if (!rows || rows.length === 0 || !rows[0].persons) {
+        if (!rows || rows.length === 0) {
             return res.json([]);
         }
 
         // Split the concatenated string into an array and remove duplicates
-        const personsList = [...new Set(rows[0].persons.split(","))].map(person => person.trim());
+        // const personsList = [...new Set(rows[0].persons.split(","))].map(person => person.trim());
 
-        res.json(personsList);
+        res.json(rows);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+// Add a new Maharaj Ji, Mata Ji, or Mandir
+app.post("/dedicated_persons", async (req, res) => {
+  const { name, category, primary_sales_person, secondary_sales_person } = req.body;
+
+  if (!name || !primary_sales_person) {
+      return res.status(400).json({ error: "Name and primary sales person are required" });
+  }
+
+  try {
+      const [result] = await pool.query(
+          `INSERT INTO AdinathTV_Special_Persons (name, category, primary_sales_person, secondary_sales_person) 
+           VALUES (?, ?, ?, ?)`, 
+          [name, category, primary_sales_person, secondary_sales_person || null]
+      );
+      res.json({ id: result.insertId, name, category, primary_sales_person, secondary_sales_person });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+});
+
+// Update an existing Maharaj Ji, Mata Ji, or Mandir
+app.put("/dedicated_persons/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, category, primary_sales_person, secondary_sales_person } = req.body;
+
+  if (!name || !primary_sales_person) {
+      return res.status(400).json({ error: "Name and primary sales person are required" });
+  }
+
+  try {
+      const [result] = await pool.query(
+          `UPDATE AdinathTV_Special_Persons SET name = ?, category = ?, primary_sales_person = ?, secondary_sales_person = ? WHERE id = ?`,
+          [name, category, primary_sales_person, secondary_sales_person || null, id]
+      );
+
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ error: "Record not found" });
+      }
+
+      res.json({ message: "Record updated successfully" });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a Maharaj Ji, Mata Ji, or Mandir
+app.delete("/dedicated_persons/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+      const [result] = await pool.query(`DELETE FROM AdinathTV_Special_Persons WHERE id = ?`, [id]);
+
+      if (result.affectedRows === 0) {
+          return res.status(404).json({ error: "Record not found" });
+      }
+
+      res.json({ message: "Record deleted successfully" });
+  } catch (error) {
+      res.status(500).json({ error: error.message });
+  }
 });
 
 // Get sales
@@ -234,31 +291,73 @@ app.get("/sales", async (req, res) => {
     }
 });
 
-// Get sales by specfic person
-app.get("/sales/:person", async (req, res) => {
-    const { person } = req.params;
-    try {
-        const [rows] = await pool.query(
-            "SELECT employee_id, employee_name,phone FROM AdinathTV_Employees WHERE department_id = 1 AND FIND_IN_SET(?, Dedicated_Person) AND status NOT LIKE 'Deleted'",
-            [person]
-        );
-        res.json(rows);
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+// Get salespersons assigned to a specific Maharaj Ji, Mata Ji, or Mandir
+app.get("/sales/:personId", async (req, res) => {
+  const { personId } = req.params;
+  
+  try {
+    console.log(personId);
+      const [rows] = await pool.query(`
+          SELECT e.employee_id, e.employee_name, e.phone 
+          FROM AdinathTV_Employees e
+          WHERE department_id = 1
+          AND (e.employee_id = (SELECT primary_sales_person FROM AdinathTV_Special_Persons WHERE id = ?))
+          AND e.status NOT LIKE 'Deleted'
+      `, [personId]);
+      console.log(rows);
+      res.json(rows);
+  } catch (err) {
+      res.status(500).json({ error: err.message });
+  }
 });
 
 // Retrieve HOCs for a specific lead
+// Retrieve HOCs for a specific lead
 app.get("/hocs/:leadId", async (req, res) => {
-  const { leadId } = req.params
+  const { leadId } = req.params;
   try {
-    const [rows] = await pool.query("SELECT * FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
-    res.json(rows)
+    // Query to fetch host details based on host_1 to host_7 for the specified lead_id
+    const [leadRows] = await pool.query(`
+      SELECT host_1, host_2, host_3, host_4, host_5, host_6, host_7
+      FROM AdinathTV_Leads
+      WHERE lead_id = ?
+    `, [leadId]);
+
+    // Check if the lead exists
+    if (leadRows.length === 0) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    // Extract host IDs from the lead
+    const hostIds = leadRows[0];
+    const hocIds = [
+      hostIds.host_1,
+      hostIds.host_2,
+      hostIds.host_3,
+      hostIds.host_4,
+      hostIds.host_5,
+      hostIds.host_6,
+      hostIds.host_7
+    ].filter(id => id !== null); // Filter out null values
+
+    // If there are no host IDs, return an empty array
+    if (hocIds.length === 0) {
+      return res.json([]);
+    }
+
+    // Query to fetch host details for the retrieved hoc_ids
+    const [hostRows] = await pool.query(`
+      SELECT *
+      FROM AdinathTV_Host_POC
+      WHERE hoc_id IN (?)
+    `, [hocIds]);
+
+    res.json(hostRows);
   } catch (err) {
-    console.error("Error fetching HOCs:", err)
-    res.status(500).json({ error: err.message })
+    console.error("Error fetching HOCs:", err);
+    res.status(500).json({ error: err.message });
   }
-})
+});
 // Add a new helper function to validate sales_person_1
 async function validateSalesPerson(salesPersonId) {					               //added new
     try {
@@ -329,45 +428,70 @@ const sendWhatsAppMessage = async (sales_person_contact_1,leadId, leadName, lead
       console.error("Error sending WhatsApp message:", error.response?.data || error.message);
     }
   };
-// Add a new lead
+// ADD  a lead
 app.post("/leads", async (req, res) => {
-  const {
-    lead_name,
-    event_name,
-    event_date,
-    poc_no,
-    location,
-    maharaj_mandir,
-    sales_person_1,
-    sales_person_contact_1,
-    hocs,
-  } = req.body
-// Validate sales_person_1
+    const {
+        lead_name,
+        event_name,
+        event_date,
+        poc_no,
+        location,
+        maharaj_mandir,
+        sales_person_1,
+        hocs
+    } = req.body;
+
+    // Validate sales_person_1 (Ensure Employee ID exists)
     const isValidSalesPerson = await validateSalesPerson(sales_person_1);
     if (!isValidSalesPerson) {
         return res.status(400).json({ error: "Invalid sales_person_1: Employee ID does not exist." });
     }
-  try {
-    const [result] = await pool.query(
-      `INSERT INTO AdinathTV_Leads 
-            (lead_name, event_name, event_date, poc_no, location, maharaj_mandir, sales_person_1, sales_person_contact_1) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [lead_name, event_name, event_date, poc_no, location, maharaj_mandir, sales_person_1, sales_person_contact_1],
-    )
 
-    const leadId = result.insertId
+    try {
+        const hostIds = new Array(7).fill(null); // Default null for max 7 hosts
 
-    if (hocs && hocs.length > 0) {
-      const hocValues = hocs.map((hoc) => [leadId, hoc.host_name, hoc.poc_contact])
-      await pool.query("INSERT INTO AdinathTV_Host_POC (lead_id, host_name, poc_contact) VALUES ?", [hocValues])
+        if (hocs && hocs.length > 0) {
+            for (let i = 0; i < Math.min(hocs.length, 7); i++) {
+                const { host_name, poc_contact } = hocs[i];
+
+                // Check if host already exists
+                const [existingHost] = await pool.query(
+                    "SELECT hoc_id FROM AdinathTV_Host_POC WHERE host_name = ? AND poc_contact = ? LIMIT 1",
+                    [host_name, poc_contact]
+                );
+
+                if (existingHost.length > 0) {
+                    hostIds[i] = existingHost[0].hoc_id; // Use existing ID
+                } else {
+                    // Insert new host and get new ID
+                    const [newHost] = await pool.query(
+                        "INSERT INTO AdinathTV_Host_POC (host_name, poc_contact) VALUES (?, ?)",
+                        [host_name, poc_contact]
+                    );
+                    hostIds[i] = newHost.insertId;
+                }
+            }
+        }
+
+        // Insert into `Leads` table
+        const [result] = await pool.query(
+            `INSERT INTO AdinathTV_Leads 
+            (lead_name, event_name, event_date, poc_no, location, maharaj_mandir, sales_person_1, 
+             host_1, host_2, host_3, host_4, host_5, host_6, host_7,  is_assigned, status) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,  0, 'New')`,
+            [lead_name, event_name, event_date, poc_no, location, maharaj_mandir, sales_person_1,  ...hostIds]
+        );
+
+        const leadId = result.insertId;
+        const team = await pool.query("SELECT phone from AdinathTV_Employees where employee_id = ?",[sales_person_1]);
+        sendWhatsAppMessage(team[0].phone,leadId, lead_name, poc_no, event_name, event_date, maharaj_mandir);
+        res.status(201).json({ message: "Lead added successfully.", leadId });
+
+    } catch (err) {
+        console.error("Error adding lead:", err);
+        res.status(500).json({ error: err.message });
     }
-    sendWhatsAppMessage(sales_person_contact_1,leadId, lead_name, poc_no, event_name, event_date, maharaj_mandir);
-    res.status(201).json({ message: "Lead and HOCs added successfully.", leadId })
-  } catch (err) {
-    console.error("Error adding lead:", err)
-    res.status(500).json({ error: err.message })
-  }
-})
+});
 
 // Update a lead
 app.put("/leads/:leadId", async (req, res) => {
@@ -380,15 +504,38 @@ app.put("/leads/:leadId", async (req, res) => {
     location,
     maharaj_mandir,
     sales_person_1,
-    sales_person_contact_1,
     hocs,
   } = req.body
 
   try {
+    const hostIds = new Array(7).fill(null); // Default null for max 7 hosts
+
+    if (hocs && hocs.length > 0) {
+        for (let i = 0; i < Math.min(hocs.length, 7); i++) {
+            const { host_name, poc_contact } = hocs[i];
+
+            // Check if host already exists
+            const [existingHost] = await pool.query(
+                "SELECT hoc_id FROM AdinathTV_Host_POC WHERE host_name = ? AND poc_contact = ? LIMIT 1",
+                [host_name, poc_contact]
+            );
+
+            if (existingHost.length > 0) {
+                hostIds[i] = existingHost[0].hoc_id; // Use existing ID
+            } else {
+                // Insert new host and get new ID
+                const [newHost] = await pool.query(
+                    "INSERT INTO AdinathTV_Host_POC (host_name, poc_contact) VALUES (?, ?)",
+                    [host_name, poc_contact]
+                );
+                hostIds[i] = newHost.insertId;
+            }
+        }
+    }
     await pool.query(
       `UPDATE AdinathTV_Leads 
             SET lead_name = ?, event_name = ?, event_date = ?, poc_no = ?, location = ?, maharaj_mandir = ?, 
-            sales_person_1 = ?, sales_person_contact_1 = ? 
+            sales_person_1 = ?, host_1=?, host_2=?, host_3=?, host_4=?, host_5=?, host_6=?,host_7=?
             WHERE lead_id = ?`,
       [
         lead_name,
@@ -398,16 +545,16 @@ app.put("/leads/:leadId", async (req, res) => {
         location,
         maharaj_mandir,
         sales_person_1,
-        sales_person_contact_1,
         leadId,
+        ...hostIds,
       ],
     )
 
-    await pool.query("DELETE FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
-    if (hocs && hocs.length > 0) {
-      const hocValues = hocs.map((hoc) => [leadId, hoc.host_name, hoc.poc_contact])
-      await pool.query("INSERT INTO AdinathTV_Host_POC (lead_id, host_name, poc_contact) VALUES ?", [hocValues])
-    }
+    // await pool.query("DELETE FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
+    // if (hocs && hocs.length > 0) {
+    //   const hocValues = hocs.map((hoc) => [leadId, hoc.host_name, hoc.poc_contact])
+    //   await pool.query("INSERT INTO AdinathTV_Host_POC (lead_id, host_name, poc_contact) VALUES ?", [hocValues])
+    // }
     res.json({ message: "Lead updated successfully." })
   } catch (err) {
     console.error("Error updating lead:", err)
@@ -422,7 +569,7 @@ app.delete("/leads/:leadId", async (req, res) => {
   try {
     await pool.query("DELETE FROM AdinathTV_Leads WHERE lead_id = ?", [leadId])
 
-    await pool.query("DELETE FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
+    // await pool.query("DELETE FROM AdinathTV_Host_POC WHERE lead_id = ?", [leadId])
 
     res.json({ message: "Lead and associated HOCs deleted successfully." })
   } catch (err) {
@@ -435,13 +582,7 @@ app.delete("/leads/:leadId", async (req, res) => {
 app.get("/bookings", async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT 
-            b.booking_id, 
-            b.client_name, 
-            b.client_contact_no1 AS mobileNo, 
-            b.billing_name, 
-            b.billing_address, 
-            b.billing_address_pincode AS bookingAmount
+      `SELECT *
             FROM AdinathTV_Bookings b`,
     )
     res.json(rows)
@@ -451,9 +592,9 @@ app.get("/bookings", async (req, res) => {
   }
 })
 
-// Create a new booking
 app.post("/bookings", async (req, res) => {
   const {
+    client_id,
     client_name,
     client_contact_no1,
     client_contact_no2,
@@ -463,17 +604,37 @@ app.post("/bookings", async (req, res) => {
     PAN_no,
     GST_no,
     program_type,
+    booking_amount,
+    advance_received,
+    payment_mode,
+    cheque_no,
+    cheque_date,
+    bank_name,
+    booked_by,
+    designation,
+    special_comment,
+    status,
+    approved_by,
     shooting_address,
     shooting_address_pincode,
-  } = req.body
+    shooting_schedules,
+    telecast_schedules,
+  } = req.body;
+
+  const connection = await pool.getConnection();
+  await connection.beginTransaction();
 
   try {
-    const [result] = await pool.query(
+    // Insert into AdinathTV_Bookings
+    const [bookingResult] = await connection.query(
       `INSERT INTO AdinathTV_Bookings 
-            (client_name, client_contact_no1, client_contact_no2, billing_name, billing_address,
-            billing_address_pincode, PAN_no, GST_no, program_type, shooting_address, shooting_address_pincode)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (client_id, client_name, client_contact_no1, client_contact_no2, billing_name, billing_address, 
+        billing_address_pincode, PAN_no, GST_no, program_type, booking_amount, advance_received, 
+        payment_mode, cheque_no, cheque_date, bank_name, booked_by, designation, special_comment, 
+        status, approved_by, shooting_address, shooting_address_pincode, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
+        client_id,
         client_name,
         client_contact_no1,
         client_contact_no2 || null,
@@ -483,16 +644,81 @@ app.post("/bookings", async (req, res) => {
         PAN_no,
         GST_no,
         program_type,
+        booking_amount,
+        advance_received,
+        payment_mode,
+        cheque_no,
+        cheque_date,
+        bank_name,
+        booked_by,
+        designation,
+        special_comment,
+        status,
+        approved_by,
         shooting_address,
         shooting_address_pincode,
-      ],
-    )
-    res.status(201).json({ booking_id: result.insertId, message: "Booking created successfully" })
+      ]
+    );
+
+    const booking_id = bookingResult.insertId;
+
+    // Insert into AdinathTV_Shooting_Schedules
+    if (shooting_schedules && shooting_schedules.length > 0) {
+      const shootingValues = shooting_schedules.map(({
+        shooting_date,
+        shooting_starttime,
+        shooting_endtime,
+        cameraman_rep_date,
+        cameraman_rep_time,
+      }) => [
+        booking_id,
+        shooting_date,
+        shooting_starttime,
+        shooting_endtime,
+        cameraman_rep_date,
+        cameraman_rep_time,
+      ]);
+
+      await connection.query(
+        `INSERT INTO AdinathTV_Shooting_Schedules (booking_id, shooting_date, shooting_starttime, shooting_endtime, cameraman_rep_date, cameraman_rep_time) 
+        VALUES ?`,
+        [shootingValues]
+      );
+    }
+
+    // Insert into AdinathTV_Telecast_Schedules
+    if (telecast_schedules && telecast_schedules.length > 0) {
+      const telecastValues = telecast_schedules.map(({
+        telecast_date,
+        telecast_starttime,
+        telecast_endtime,
+        duration,
+      }) => [
+        booking_id,
+        telecast_date,
+        telecast_starttime,
+        telecast_endtime,
+        duration,
+      ]);
+
+      await connection.query(
+        `INSERT INTO AdinathTV_Telecast_Schedules (booking_id, telecast_date, telecast_starttime, telecast_endtime, duration) 
+        VALUES ?`,
+        [telecastValues]
+      );
+    }
+
+    await connection.commit();
+    res.status(201).json({ booking_id, message: "Booking created successfully with schedules" });
   } catch (error) {
-    console.error(error)
-    res.status(500).json({ error: error.message })
+    await connection.rollback();
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    connection.release();
   }
-})
+});
+
 
 // Get shooting schedules for a booking
 app.get("/bookings/:bookingId/shooting-schedules", async (req, res) => {

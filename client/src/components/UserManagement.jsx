@@ -37,7 +37,7 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   boxShadow: theme.shadows[3],
   marginTop: theme.spacing(2),
   overflowY: "scroll",
-  height:"70vh",
+  height: "70vh",
   maxWidth: "100%", // Prevent horizontal scrolling
   "& .MuiTable-root": {
     tableLayout: "fixed", // Fixed table layout to prevent horizontal scrolling
@@ -83,6 +83,15 @@ const StyledFormControl = styled(FormControl)(({ theme }) => ({
     "&:hover": {
       borderColor: theme.palette.primary.main,
     },
+    "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+      borderColor: "#7e1519",
+    },
+  },
+  "& .MuiInputLabel-root": {
+    color: "#7e1519",
+    "&.Mui-focused": {
+      color: "#7e1519",
+    },
   },
 }))
 
@@ -96,6 +105,7 @@ function UserManagement() {
   const [formErrors, setFormErrors] = useState({})
   const [showCredentials, setShowCredentials] = useState(false)
   const [userToDelete, setUserToDelete] = useState(null)
+  const [searchTerm, setSearchTerm] = useState("") // State for search term
 
   useEffect(() => {
     fetchUsers()
@@ -147,24 +157,27 @@ function UserManagement() {
   }
 
   const handleSave = async (event) => {
+    console.log(1);
     event.preventDefault()
     const formData = new FormData(event.target)
     const userData = Object.fromEntries(formData.entries())
-
+    console.log(formData);
+    console.log(userData);
     // Form validation
     const errors = {}
     if (!userData.employee_name) errors.employee_name = "Employee name is required"
     if (!userData.phone) errors.phone = "Phone number is required"
     if (!userData.department_id) errors.department_id = "Department is required"
     if (!userData.role) errors.role = "Role is required"
-    if (!userData.Dedicated_Person) errors.Dedicated_Person='Required fields'
-
+    //if (!userData.Dedicated_Person) errors.Dedicated_Person = 'Required fields'
+    console.log(Object.keys(errors))
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors)
       return
     }
-
+    
     try {
+      console.log(selectedUser);
       const response = selectedUser
         ? await axios.put(`${import.meta.env.VITE_API_URL}/users/${selectedUser.employee_id}`, userData)
         : await axios.post(`${import.meta.env.VITE_API_URL}/users`, userData)
@@ -222,23 +235,38 @@ function UserManagement() {
     return department ? department.department_name : "N/A"
   }
 
+  // Filter users based on search term
+  const filteredUsers = users.filter(user =>
+    user.employee_name.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   return (
     <Box sx={{ height: "100vh", overflow: "hidden", p: 3, backgroundColor: "rgba(253,232,199,255)" }}>
       <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Typography variant="h4">Employee Management</Typography>
-        <Button
-          variant="contained"
-          onClick={() => setOpenDialog(true)}
-          sx={{
-            backgroundColor: "#7e1519",
-            "&:hover": {
-              backgroundColor: "#fdedd1",
-              color: "#7e1519",
-            },
-          }}
-        >
-          Add Employee
-        </Button>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <TextField
+            label="Search"
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ mr: 2 }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => setOpenDialog(true)}
+            sx={{
+              backgroundColor: "#7e1519",
+              "&:hover": {
+                backgroundColor: "#fdedd1",
+                color: "#7e1519",
+              },
+            }}
+          >
+            Add Employee
+          </Button>
+        </Box>
       </Box>
 
       <StyledTableContainer component={Paper}>
@@ -252,12 +280,12 @@ function UserManagement() {
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Manager</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Role</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Status</StyledTableCell>
-              <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Mandir/Maharaj ji</StyledTableCell>
+              {/* <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Mandir/Maharaj ji</StyledTableCell> */}
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Actions</StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
+            {filteredUsers.map((user) => (
               <StyledTableRow key={user.employee_id}>
                 <StyledTableCell>{user.employee_id}</StyledTableCell>
                 <StyledTableCell>{user.employee_name}</StyledTableCell>
@@ -268,7 +296,7 @@ function UserManagement() {
                 </StyledTableCell>
                 <StyledTableCell>{user.role}</StyledTableCell>
                 <StyledTableCell>{user.status}</StyledTableCell>
-                <StyledTableCell>{user.Dedicated_Person}</StyledTableCell>
+                {/* <StyledTableCell>{user.Dedicated_Person}</StyledTableCell> */}
                 <StyledTableCell>
                   <IconButton onClick={() => handleEdit(user)} color="primary" size="small">
                     <EditIcon />
@@ -297,7 +325,7 @@ function UserManagement() {
           },
         }}
       >
-        <DialogTitle>{selectedUser ? "Edit User" : "Add User"}</DialogTitle>
+        <DialogTitle>{selectedUser ? "Edit User" : "Add Employee"}</DialogTitle>
         <form onSubmit={handleSave}>
           <DialogContent>
             <Fade in={true} timeout={500}>
@@ -317,7 +345,7 @@ function UserManagement() {
                   helperText={formErrors.employee_name}
                 />
                 <StyledTextField
-                  label="Phone"
+                  label="Phone(with 91)"
                   name="phone"
                   defaultValue={selectedUser?.phone}
                   error={!!formErrors.phone}
@@ -327,11 +355,23 @@ function UserManagement() {
                 <StyledTextField label="Address" name="address" defaultValue={selectedUser?.address} />
                 <StyledTextField label="Work Email" name="work_email" defaultValue={selectedUser?.work_email} />
                 <StyledFormControl>
-                  <InputLabel>Department</InputLabel>
+                  <InputLabel shrink={true}>Department</InputLabel>
                   <Select
                     name="department_id"
-                    defaultValue={selectedUser?.department_id || ""}
+                    defaultValue={selectedUser?.department_id || "NAN"}
                     error={!!formErrors.department_id}
+                    label="Department"
+                    sx={{
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                    }}
                   >
                     {departments.map((dept) => (
                       <MenuItem key={dept.department_id} value={dept.department_id}>
@@ -341,9 +381,26 @@ function UserManagement() {
                   </Select>
                   {formErrors.department_id && <FormHelperText error>{formErrors.department_id}</FormHelperText>}
                 </StyledFormControl>
+
                 <StyledFormControl>
-                  <InputLabel>Role</InputLabel>
-                  <Select name="role" defaultValue={selectedUser?.role || ""} error={!!formErrors.role}>
+                  <InputLabel shrink={true}>Role</InputLabel>
+                  <Select
+                    name="role"
+                    defaultValue={selectedUser?.role || "NAN"}
+                    error={!!formErrors.role}
+                    label="Role"
+                    sx={{
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                    }}
+                  >
                     <MenuItem value="Employee">Employee</MenuItem>
                     <MenuItem value="Manager">Manager</MenuItem>
                     <MenuItem value="Admin">Admin</MenuItem>
@@ -351,16 +408,48 @@ function UserManagement() {
                   </Select>
                   {formErrors.role && <FormHelperText error>{formErrors.role}</FormHelperText>}
                 </StyledFormControl>
+
                 <StyledFormControl>
-                  <InputLabel>Status</InputLabel>
-                  <Select name="status" defaultValue={selectedUser?.status || "Active"}>
+                  <InputLabel shrink={true}>Status</InputLabel>
+                  <Select
+                    name="status"
+                    defaultValue={selectedUser?.status || "Active"}
+                    label="Status"
+                    sx={{
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                    }}
+                  >
                     <MenuItem value="Active">Active</MenuItem>
                     <MenuItem value="Inactive">Inactive</MenuItem>
                   </Select>
                 </StyledFormControl>
+
                 <StyledFormControl>
-                  <InputLabel>Manager</InputLabel>
-                  <Select name="manager_id" defaultValue={selectedUser?.manager_id || ""}>
+                  <InputLabel shrink={true}>Manager</InputLabel>
+                  <Select
+                    name="manager_id"
+                    defaultValue={selectedUser?.manager_id || "NAN"}
+                    label="Manager"
+                    sx={{
+                      "& .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                      "&:hover .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                        borderColor: "#7e1519",
+                      },
+                    }}
+                  >
                     <MenuItem value="">None</MenuItem>
                     {managers.map((manager) => (
                       <MenuItem key={manager.employee_id} value={manager.employee_id}>
@@ -369,14 +458,13 @@ function UserManagement() {
                     ))}
                   </Select>
                 </StyledFormControl>
-
-                <StyledTextField
+                {/* <StyledTextField
                   label="Mandir/Maharaj ji"
                   name="Dedicated_Person"
                   error={!!formErrors.Dedicated_Person}
                   defaultValue={selectedUser?.Dedicated_Person}
                   helperText={formErrors.Dedicated_Person}
-                />
+                /> */}
 
                 <FormControlLabel
                   control={
@@ -427,4 +515,3 @@ function UserManagement() {
 }
 
 export default UserManagement
-

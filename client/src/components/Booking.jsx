@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -18,20 +18,21 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-} from "@mui/material"
-import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"
-import { styled } from "@mui/material/styles"
+} from "@mui/material";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import { styled } from "@mui/material/styles";
+import axios from "axios";
 
 // Styled components for custom table elements
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   boxShadow: theme.shadows[3],
   marginTop: theme.spacing(2),
-}))
+}));
 
 const StyledTable = styled(Table)(({ theme }) => ({
   minWidth: 650,
-}))
+}));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: "#fdedd1", // Background color for table entries
@@ -41,77 +42,76 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   "&:hover": {
     backgroundColor: theme.palette.action.selected,
   },
-}))
+}));
 
 function Booking() {
-  const [bookings, setBookings] = useState([])
-  const [openDialog, setOpenDialog] = useState(false)
-  const [selectedBooking, setSelectedBooking] = useState(null)
+  const [bookings, setBookings] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [shootingSchedules, setShootingSchedules] = useState([]);
+  const [telecastSchedules, setTelecastSchedules] = useState([]);
 
   useEffect(() => {
-    // Dummy data
-    const dummyBookings = [
-      {
-        booking_id: 1,
-        date: "2023-06-01",
-        client_name: "John Doe",
-        shooting_address: "123 Main St, City",
-        mobile_no: "1234567890",
-        sales_poc: "Jane Smith",
-        ref_no: "REF001",
-        pin_code: "123456",
-        shooting_time: "10:00 AM",
-        reporting_time: "09:00 AM",
-        cameraman_reporting_date: "2023-06-01",
-        shooting_date_from: "2023-06-02",
-        billing_name: "John Doe Enterprises",
-        billing_address: "456 Business Ave, City",
-        billing_pin_code: "654321",
-        pan_no: "ABCDE1234F",
-        gst_no: "12ABCDE1234F1Z5",
-        program: "News",
-        live: "Yes",
-        vishesh: "No",
-        scroll: "Yes",
-        promo: "No",
-        l_band: "Yes",
-        tvc: "No",
-        other: "",
-        telecast_date_from: "2023-06-03",
-        telecast_date_to: "2023-06-04",
-        duration: "2 hours",
-        telecast_time: "8:00 PM",
-        booking_amount: "10000",
-        payment_mode: "CHEQUE",
-        cheque_dd_no: "123456",
-        cheque_date: "2023-05-30",
-        bank_name: "XYZ Bank",
-        advance_rcvd: "5000",
-        booked_by: "Alice Johnson",
-        special_comment: "VIP Client",
-        approved_by: "Bob Williams",
-        designation: "Manager",
-      },
-      // Add more dummy bookings here if needed
-    ]
-    setBookings(dummyBookings)
-  }, [])
+    fetchBookings();
+  }, []);
 
-  const handleEdit = (booking) => {
-    setSelectedBooking(booking)
-    setOpenDialog(true)
-  }
+  const fetchBookings = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/bookings`);
+      setBookings(response.data);
+    } catch (error) {
+      console.error("Error fetching bookings:", error);
+      alert("Failed to fetch bookings. Please try again.");
+    }
+  };
+
+  const handleEdit = async (booking) => {
+    setSelectedBooking(booking);
+    try {
+      const shootingResponse = await axios.get(
+        `${import.meta.env.VITE_API_URL}/bookings/${booking.booking_id}/shooting-schedules`
+      );
+      setShootingSchedules(shootingResponse.data);
+
+      const telecastResponse = await axios.get(
+        `${import.meta.env.VITE_API_URL}/bookings/${booking.booking_id}/telecast-schedules`
+      );
+      setTelecastSchedules(telecastResponse.data);
+    } catch (error) {
+      console.error("Error fetching schedules:", error);
+      alert("Failed to fetch schedules. Please try again.");
+    }
+    setOpenDialog(true);
+  };
 
   const handleClose = () => {
-    setOpenDialog(false)
-    setSelectedBooking(null)
-  }
+    setOpenDialog(false);
+    setSelectedBooking(null);
+    setShootingSchedules([]);
+    setTelecastSchedules([]);
+  };
 
-  const handleSave = (event) => {
-    event.preventDefault()
-    // Implement save logic here
-    handleClose()
-  }
+  const handleSave = async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const bookingData = Object.fromEntries(formData.entries());
+
+    try {
+      if (selectedBooking) {
+        await axios.put(
+          `${import.meta.env.VITE_API_URL}/bookings/${selectedBooking.booking_id}`,
+          bookingData
+        );
+      } else {
+        await axios.post(`${import.meta.env.VITE_API_URL}/bookings`, bookingData);
+      }
+      fetchBookings(); // Refresh the booking list
+      handleClose();
+    } catch (error) {
+      console.error("Error saving booking:", error);
+      alert("Failed to save booking. Please try again.");
+    }
+  };
 
   return (
     <Box sx={{ height: "100vh", overflow: "hidden", p: 3, backgroundColor: "rgba(253,232,199,255)" }}>
@@ -134,9 +134,9 @@ function Booking() {
                 <TableCell>{booking.booking_id}</TableCell>
                 <TableCell>{booking.date}</TableCell>
                 <TableCell>{booking.client_name}</TableCell>
-                <TableCell>{booking.mobile_no}</TableCell>
+                <TableCell>{booking.mobileNo}</TableCell>
                 <TableCell>{booking.shooting_address}</TableCell>
-                <TableCell>{booking.booking_amount}</TableCell>
+                <TableCell>{booking.bookingAmount}</TableCell>
                 <TableCell>
                   <Button
                     onClick={() => handleEdit(booking)}
@@ -180,13 +180,14 @@ function Booking() {
                 <Typography component="span">Basic Information</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <TextField fullWidth label="DATE" name="date" margin="normal" defaultValue={selectedBooking?.date} />
+                <TextField fullWidth label="DATE" name="date" margin="normal" defaultValue={selectedBooking?.date} disabled />
                 <TextField
                   fullWidth
                   label="CLIENT NAME"
                   name="client_name"
                   margin="normal"
                   defaultValue={selectedBooking?.client_name}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -194,13 +195,15 @@ function Booking() {
                   name="shooting_address"
                   margin="normal"
                   defaultValue={selectedBooking?.shooting_address}
+                  disabled
                 />
                 <TextField
                   fullWidth
                   label="MOBILE No."
-                  name="mobile_no"
+                  name="mobileNo"
                   margin="normal"
-                  defaultValue={selectedBooking?.mobile_no}
+                  defaultValue={selectedBooking?.mobileNo}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -208,6 +211,7 @@ function Booking() {
                   name="sales_poc"
                   margin="normal"
                   defaultValue={selectedBooking?.sales_poc}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -215,6 +219,7 @@ function Booking() {
                   name="ref_no"
                   margin="normal"
                   defaultValue={selectedBooking?.ref_no}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -222,6 +227,7 @@ function Booking() {
                   name="pin_code"
                   margin="normal"
                   defaultValue={selectedBooking?.pin_code}
+                  disabled
                 />
               </AccordionDetails>
             </Accordion>
@@ -231,41 +237,50 @@ function Booking() {
                 <Typography component="span">Shooting Details</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <TextField
-                  fullWidth
-                  label="SHOOTING TIME"
-                  name="shooting_time"
-                  margin="normal"
-                  defaultValue={selectedBooking?.shooting_time}
-                />
-                <TextField
-                  fullWidth
-                  label="REPORTING TIME"
-                  name="reporting_time"
-                  margin="normal"
-                  defaultValue={selectedBooking?.reporting_time}
-                />
-                <TextField
-                  fullWidth
-                  label="CAMERAMAN REPORTING DATE"
-                  name="cameraman_reporting_date"
-                  margin="normal"
-                  defaultValue={selectedBooking?.cameraman_reporting_date}
-                />
-                <TextField
-                  fullWidth
-                  label="SHOOTING DATE: From"
-                  name="shooting_date_from"
-                  margin="normal"
-                  defaultValue={selectedBooking?.shooting_date_from}
-                />
-                <TextField
-                  fullWidth
-                  label="SHOOTING DATE: To"
-                  name="shooting_date_to"
-                  margin="normal"
-                  defaultValue={selectedBooking?.shooting_date_to}
-                />
+                {shootingSchedules.map((schedule, index) => (
+                  <Box key={index} sx={{ mb: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="SHOOTING TIME"
+                      name="shooting_time"
+                      margin="normal"
+                      defaultValue={schedule.shooting_starttime}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="REPORTING TIME"
+                      name="reporting_time"
+                      margin="normal"
+                      defaultValue={schedule.cameraman_rep_time}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="CAMERAMAN REPORTING DATE"
+                      name="cameraman_reporting_date"
+                      margin="normal"
+                      defaultValue={schedule.cameraman_rep_date}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="SHOOTING DATE: From"
+                      name="shooting_date_from"
+                      margin="normal"
+                      defaultValue={schedule.shooting_date}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="SHOOTING DATE: To"
+                      name="shooting_date_to"
+                      margin="normal"
+                      defaultValue={schedule.shooting_endtime}
+                      disabled
+                    />
+                  </Box>
+                ))}
               </AccordionDetails>
             </Accordion>
 
@@ -280,6 +295,7 @@ function Booking() {
                   name="billing_name"
                   margin="normal"
                   defaultValue={selectedBooking?.billing_name}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -287,6 +303,7 @@ function Booking() {
                   name="billing_address"
                   margin="normal"
                   defaultValue={selectedBooking?.billing_address}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -294,6 +311,7 @@ function Booking() {
                   name="billing_pin_code"
                   margin="normal"
                   defaultValue={selectedBooking?.billing_pin_code}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -301,6 +319,7 @@ function Booking() {
                   name="pan_no"
                   margin="normal"
                   defaultValue={selectedBooking?.pan_no}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -308,6 +327,7 @@ function Booking() {
                   name="gst_no"
                   margin="normal"
                   defaultValue={selectedBooking?.gst_no}
+                  disabled
                 />
               </AccordionDetails>
             </Accordion>
@@ -323,14 +343,16 @@ function Booking() {
                   name="program"
                   margin="normal"
                   defaultValue={selectedBooking?.program}
+                  disabled
                 />
-                <TextField fullWidth label="LIVE" name="live" margin="normal" defaultValue={selectedBooking?.live} />
+                <TextField fullWidth label="LIVE" name="live" margin="normal" defaultValue={selectedBooking?.live} disabled />
                 <TextField
                   fullWidth
                   label="VISHESH"
                   name="vishesh"
                   margin="normal"
                   defaultValue={selectedBooking?.vishesh}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -338,22 +360,25 @@ function Booking() {
                   name="scroll"
                   margin="normal"
                   defaultValue={selectedBooking?.scroll}
+                  disabled
                 />
-                <TextField fullWidth label="PROMO" name="promo" margin="normal" defaultValue={selectedBooking?.promo} />
+                <TextField fullWidth label="PROMO" name="promo" margin="normal" defaultValue={selectedBooking?.promo} disabled />
                 <TextField
                   fullWidth
                   label="L-BAND"
                   name="l_band"
                   margin="normal"
                   defaultValue={selectedBooking?.l_band}
+                  disabled
                 />
-                <TextField fullWidth label="TVC" name="tvc" margin="normal" defaultValue={selectedBooking?.tvc} />
+                <TextField fullWidth label="TVC" name="tvc" margin="normal" defaultValue={selectedBooking?.tvc} disabled />
                 <TextField
                   fullWidth
                   label="Other (If Any)"
                   name="other"
                   margin="normal"
                   defaultValue={selectedBooking?.other}
+                  disabled
                 />
               </AccordionDetails>
             </Accordion>
@@ -363,34 +388,42 @@ function Booking() {
                 <Typography component="span">Telecast Information</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <TextField
-                  fullWidth
-                  label="TELECAST DATE: From"
-                  name="telecast_date_from"
-                  margin="normal"
-                  defaultValue={selectedBooking?.telecast_date_from}
-                />
-                <TextField
-                  fullWidth
-                  label="TELECAST DATE: To"
-                  name="telecast_date_to"
-                  margin="normal"
-                  defaultValue={selectedBooking?.telecast_date_to}
-                />
-                <TextField
-                  fullWidth
-                  label="DURATION"
-                  name="duration"
-                  margin="normal"
-                  defaultValue={selectedBooking?.duration}
-                />
-                <TextField
-                  fullWidth
-                  label="TELECAST TIME"
-                  name="telecast_time"
-                  margin="normal"
-                  defaultValue={selectedBooking?.telecast_time}
-                />
+                {telecastSchedules.map((schedule, index) => (
+                  <Box key={index} sx={{ mb: 2 }}>
+                    <TextField
+                      fullWidth
+                      label="TELECAST DATE: From"
+                      name="telecast_date_from"
+                      margin="normal"
+                      defaultValue={schedule.telecast_date}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="TELECAST DATE: To"
+                      name="telecast_date_to"
+                      margin="normal"
+                      defaultValue={schedule.telecast_endtime}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="DURATION"
+                      name="duration"
+                      margin="normal"
+                      defaultValue={schedule.duration}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="TELECAST TIME"
+                      name="telecast_time"
+                      margin="normal"
+                      defaultValue={schedule.telecast_starttime}
+                      disabled
+                    />
+                  </Box>
+                ))}
               </AccordionDetails>
             </Accordion>
 
@@ -405,6 +438,7 @@ function Booking() {
                   name="booking_amount"
                   margin="normal"
                   defaultValue={selectedBooking?.booking_amount}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -412,6 +446,7 @@ function Booking() {
                   name="payment_mode"
                   margin="normal"
                   defaultValue={selectedBooking?.payment_mode}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -419,6 +454,7 @@ function Booking() {
                   name="cheque_dd_no"
                   margin="normal"
                   defaultValue={selectedBooking?.cheque_dd_no}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -426,6 +462,7 @@ function Booking() {
                   name="cheque_date"
                   margin="normal"
                   defaultValue={selectedBooking?.cheque_date}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -433,6 +470,7 @@ function Booking() {
                   name="bank_name"
                   margin="normal"
                   defaultValue={selectedBooking?.bank_name}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -440,6 +478,7 @@ function Booking() {
                   name="advance_rcvd"
                   margin="normal"
                   defaultValue={selectedBooking?.advance_rcvd}
+                  disabled
                 />
               </AccordionDetails>
             </Accordion>
@@ -455,6 +494,7 @@ function Booking() {
                   name="booked_by"
                   margin="normal"
                   defaultValue={selectedBooking?.booked_by}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -462,6 +502,7 @@ function Booking() {
                   name="special_comment"
                   margin="normal"
                   defaultValue={selectedBooking?.special_comment}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -469,6 +510,7 @@ function Booking() {
                   name="approved_by"
                   margin="normal"
                   defaultValue={selectedBooking?.approved_by}
+                  disabled
                 />
                 <TextField
                   fullWidth
@@ -476,6 +518,7 @@ function Booking() {
                   name="designation"
                   margin="normal"
                   defaultValue={selectedBooking?.designation}
+                  disabled
                 />
               </AccordionDetails>
             </Accordion>
@@ -499,7 +542,7 @@ function Booking() {
         </form>
       </Dialog>
     </Box>
-  )
+  );
 }
 
-export default Booking
+export default Booking;

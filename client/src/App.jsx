@@ -8,7 +8,7 @@ import LeadManagement from "./components/LeadManagement"
 import Booking from "./components/Booking"
 import Settings from "./components/Settings"
 import Welcome from "../src/page/welcome"
-
+import MaharajJi from "./components/Maharajji"
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -44,6 +44,7 @@ function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   {userRole === "Admin" && <Route path="/users" element={<UserManagement />} />}
                   <Route path="/leads" element={<LeadManagement />} />
+                  <Route path="/maharaj-ji" element={<MaharajJi/>} />
                   <Route path="/booking" element={<Booking />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="*" element={<Navigate to="/dashboard" replace />} />

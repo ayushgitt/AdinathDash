@@ -14,7 +14,7 @@ import {
   IconButton,
 } from "@mui/material";
 import { keyframes } from "@mui/system";
-import { Dashboard as DashboardIcon, People, Assignment, Book, Settings, Logout } from "@mui/icons-material";
+import { Dashboard as DashboardIcon, People, Assignment, Book, Settings, Logout, Person } from "@mui/icons-material";
 
 const drawerWidth = 240;
 
@@ -36,6 +36,7 @@ function Layout({ children, userRole, onLogout }) {
   const menuItems = [
     { title: "Dashboard", icon: DashboardIcon, path: "/dashboard" },
     { title: "Leads", icon: Assignment, path: "/leads" },
+    { title: "Maharaj Ji", icon: Person, path: "/maharaj-ji" }, // New page added here
     { title: "Booking", icon: Book, path: "/booking" },
     { title: "Settings", icon: Settings, path: "/settings" },
   ];
