@@ -135,8 +135,8 @@ function UserManagement() {
 
   const fetchManagers = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/managers`);
-      console.log(response.data);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/managers`)
+      console.log(response.data)
       setManagers(response.data)
     } catch (error) {
       console.error("Error fetching managers:", error)
@@ -157,15 +157,16 @@ function UserManagement() {
   }
 
   const handleSave = async (event) => {
-    console.log(1);
+    console.log(1)
     event.preventDefault()
     const formData = new FormData(event.target)
     const userData = Object.fromEntries(formData.entries())
-    console.log(formData);
-    console.log(userData);
+    console.log(formData)
+    console.log(userData)
     // Form validation
     const errors = {}
-    if (!userData.employee_name) errors.employee_name = "Employee name is required"
+    //if (!userData.employee_name) errors.employee_name = "Employee name is required"
+    if(!userData.email) errors.email = "Email is required"
     if (!userData.phone) errors.phone = "Phone number is required"
     if (!userData.department_id) errors.department_id = "Department is required"
     if (!userData.role) errors.role = "Role is required"
@@ -175,9 +176,9 @@ function UserManagement() {
       setFormErrors(errors)
       return
     }
-    
+
     try {
-      console.log(selectedUser);
+      console.log(selectedUser)
       const response = selectedUser
         ? await axios.put(`${import.meta.env.VITE_API_URL}/users/${selectedUser.employee_id}`, userData)
         : await axios.post(`${import.meta.env.VITE_API_URL}/users`, userData)
@@ -236,7 +237,7 @@ function UserManagement() {
   }
 
   // Filter users based on search term
-  const filteredUsers = users.filter(user =>
+  const filteredUsers = users.filter((user) =>
     user.employee_name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -280,7 +281,6 @@ function UserManagement() {
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Manager</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Role</StyledTableCell>
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Status</StyledTableCell>
-              {/* <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Mandir/Maharaj ji</StyledTableCell> */}
               <StyledTableCell sx={{ backgroundColor: "#7e1519", color: "white" }}>Actions</StyledTableCell>
             </TableRow>
           </TableHead>
@@ -296,7 +296,6 @@ function UserManagement() {
                 </StyledTableCell>
                 <StyledTableCell>{user.role}</StyledTableCell>
                 <StyledTableCell>{user.status}</StyledTableCell>
-                {/* <StyledTableCell>{user.Dedicated_Person}</StyledTableCell> */}
                 <StyledTableCell>
                   <IconButton onClick={() => handleEdit(user)} color="primary" size="small">
                     <EditIcon />
@@ -345,17 +344,23 @@ function UserManagement() {
                   helperText={formErrors.employee_name}
                 />
                 <StyledTextField
-                  label="Phone(with 91)"
+                  label="Phone (with 91) *"
                   name="phone"
                   defaultValue={selectedUser?.phone}
                   error={!!formErrors.phone}
                   helperText={formErrors.phone}
                 />
-                <StyledTextField label="Email" name="email" defaultValue={selectedUser?.email} />
+                <StyledTextField
+                  label="Email *"
+                  name="email"
+                  defaultValue={selectedUser?.email}
+                  error={!!formErrors.email}
+                  helperText={formErrors.email}
+                />
                 <StyledTextField label="Address" name="address" defaultValue={selectedUser?.address} />
                 <StyledTextField label="Work Email" name="work_email" defaultValue={selectedUser?.work_email} />
                 <StyledFormControl>
-                  <InputLabel shrink={true}>Department</InputLabel>
+                  <InputLabel shrink={true}>Department *</InputLabel>
                   <Select
                     name="department_id"
                     defaultValue={selectedUser?.department_id || "NAN"}
@@ -383,7 +388,7 @@ function UserManagement() {
                 </StyledFormControl>
 
                 <StyledFormControl>
-                  <InputLabel shrink={true}>Role</InputLabel>
+                  <InputLabel shrink={true}>Role*</InputLabel>
                   <Select
                     name="role"
                     defaultValue={selectedUser?.role || "NAN"}
@@ -433,7 +438,7 @@ function UserManagement() {
                 </StyledFormControl>
 
                 <StyledFormControl>
-                  <InputLabel shrink={true}>Manager</InputLabel>
+                  <InputLabel shrink={true}>Manager *</InputLabel>
                   <Select
                     name="manager_id"
                     defaultValue={selectedUser?.manager_id || "NAN"}
@@ -458,13 +463,6 @@ function UserManagement() {
                     ))}
                   </Select>
                 </StyledFormControl>
-                {/* <StyledTextField
-                  label="Mandir/Maharaj ji"
-                  name="Dedicated_Person"
-                  error={!!formErrors.Dedicated_Person}
-                  defaultValue={selectedUser?.Dedicated_Person}
-                  helperText={formErrors.Dedicated_Person}
-                /> */}
 
                 <FormControlLabel
                   control={
