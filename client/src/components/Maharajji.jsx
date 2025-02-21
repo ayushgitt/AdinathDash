@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import axios from "axios"
+import { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Box,
   Button,
@@ -19,13 +19,12 @@ import {
   DialogActions,
   TextField,
   IconButton,
-  Select,
-  MenuItem,
   FormControl,
   InputLabel,
-} from "@mui/material"
-import { Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material"
-import { styled } from "@mui/material/styles"
+  Autocomplete,
+} from "@mui/material";
+import { Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
+import { styled } from "@mui/material/styles";
 
 // Styled components for custom table elements
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
@@ -38,18 +37,18 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   "& .MuiTable-root": {
     tableLayout: "fixed", // Fixed table layout to prevent horizontal scrolling
   },
-}))
+}));
 
 const StyledTable = styled(Table)(({ theme }) => ({
   width: "100%",
-}))
+}));
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
   maxWidth: "150px", // Limit cell width
-}))
+}));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   backgroundColor: "#fdedd1", // Background color for table entries
@@ -60,96 +59,103 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
     backgroundColor: theme.palette.action.selected,
     transition: "background-color 0.2s ease",
   },
-}))
+}));
 
 function MaharajJi() {
-  const [dedicatedPersons, setDedicatedPersons] = useState([])
-  const [openDialog, setOpenDialog] = useState(false)
-  const [selectedPerson, setSelectedPerson] = useState(null)
-  const [formErrors, setFormErrors] = useState({})
-  const [salesPersons, setSalesPersons] = useState([])
-  const [primarySalesPerson, setPrimarySalesPerson] = useState(null)
+  const [dedicatedPersons, setDedicatedPersons] = useState([]);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [selectedPerson, setSelectedPerson] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
+  const [salesPersons, setSalesPersons] = useState([]);
+  const [primarySalesPerson, setPrimarySalesPerson] = useState(null);
+  const [secondarySalesPerson, setSecondarySalesPerson] = useState(null);
 
   useEffect(() => {
-    fetchDedicatedPersons()
-    fetchSalesPersons()
-  }, [])
+    fetchDedicatedPersons();
+    fetchSalesPersons();
+  }, []);
 
   const fetchDedicatedPersons = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/dedicated_persons`)
-      setDedicatedPersons(response.data)
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/dedicated_persons`);
+      setDedicatedPersons(response.data);
     } catch (error) {
-      console.error("Error fetching dedicated persons:", error)
-      alert("Failed to fetch dedicated persons. Please try again.")
+      console.error("Error fetching dedicated persons:", error);
+      alert("Failed to fetch dedicated persons. Please try again.");
     }
-  }
+  };
 
   const fetchSalesPersons = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/sales`)
-      setSalesPersons(response.data)
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/sales`);
+      setSalesPersons(response.data);
     } catch (error) {
-      console.error("Error fetching sales persons:", error)
-      alert("Failed to fetch sales persons. Please try again.")
+      console.error("Error fetching sales persons:", error);
+      alert("Failed to fetch sales persons. Please try again.");
     }
-  }
+  };
 
   const handleEdit = (person) => {
-    setSelectedPerson(person)
-    setPrimarySalesPerson(person.primary_sales_person)
-    setOpenDialog(true)
-  }
+    setSelectedPerson(person);
+    setPrimarySalesPerson(person.primary_sales_person);
+    setSecondarySalesPerson(person.secondary_sales_person || null);
+    setOpenDialog(true);
+  };
 
   const handleClose = () => {
-    setOpenDialog(false)
-    setSelectedPerson(null)
-    setFormErrors({})
-    setPrimarySalesPerson(null)
-  }
+    setOpenDialog(false);
+    setSelectedPerson(null);
+    setFormErrors({});
+    setPrimarySalesPerson(null);
+    setSecondarySalesPerson(null);
+  };
 
   const handleSave = async (event) => {
-    event.preventDefault()
-    const formData = new FormData(event.target)
-    const personData = Object.fromEntries(formData.entries())
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const personData = Object.fromEntries(formData.entries());
+
+    // Add primary and secondary sales person IDs to the form data
+    personData.primary_sales_person = primarySalesPerson;
+    personData.secondary_sales_person = secondarySalesPerson;
 
     // Form validation
-    const errors = {}
-    if (!personData.name) errors.name = "Name is required"
-    if (!personData.category) errors.category = "Category is required"
-    if (!personData.primary_sales_person) errors.primary_sales_person = "Primary Sales Person is required"
+    const errors = {};
+    if (!personData.name) errors.name = "Name is required";
+    if (!personData.category) errors.category = "Category is required";
+    if (!personData.primary_sales_person) errors.primary_sales_person = "Primary Sales Person is required";
 
     if (Object.keys(errors).length > 0) {
-      setFormErrors(errors)
-      return
+      setFormErrors(errors);
+      return;
     }
 
     try {
       const response = selectedPerson
         ? await axios.put(`${import.meta.env.VITE_API_URL}/dedicated_persons/${selectedPerson.id}`, personData)
-        : await axios.post(`${import.meta.env.VITE_API_URL}/dedicated_persons`, personData)
+        : await axios.post(`${import.meta.env.VITE_API_URL}/dedicated_persons`, personData);
 
       if (response.status === 200 || response.status === 201) {
-        await fetchDedicatedPersons() // Refresh the list
-        handleClose()
+        await fetchDedicatedPersons(); // Refresh the list
+        handleClose();
       } else {
-        throw new Error("Unexpected response status")
+        throw new Error("Unexpected response status");
       }
     } catch (error) {
-      console.error("Error saving dedicated person:", error)
-      alert("Failed to save dedicated person. Please try again.")
+      console.error("Error saving dedicated person:", error);
+      alert("Failed to save dedicated person. Please try again.");
     }
-  }
+  };
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/dedicated_persons/${id}`)
-      fetchDedicatedPersons() // Refresh the list
+      await axios.delete(`${import.meta.env.VITE_API_URL}/dedicated_persons/${id}`);
+      fetchDedicatedPersons(); // Refresh the list
     } catch (error) {
-      console.error("Error deleting dedicated person:", error)
-      alert("Failed to delete dedicated person. Please try again.")
+      console.error("Error deleting dedicated person:", error);
+      alert("Failed to delete dedicated person. Please try again.");
     }
-  }
+  };
 
   return (
     <Box sx={{ height: "100vh", overflow: "hidden", p: 3, backgroundColor: "rgba(253,232,199,255)" }}>
@@ -246,42 +252,38 @@ function MaharajJi() {
                 fullWidth
               />
               <FormControl fullWidth error={!!formErrors.primary_sales_person}>
-                <InputLabel>Primary Sales Person</InputLabel>
-                <Select
-                  name="primary_sales_person"
-                  defaultValue={selectedPerson?.primary_sales_person || ""}
-                  label="Primary Sales Person"
-                  onChange={(e) => setPrimarySalesPerson(e.target.value)}
-                >
-                  {salesPersons.map((salesPerson) => (
-                    <MenuItem key={salesPerson.employee_id} value={salesPerson.employee_id}>
-                      {`${salesPerson.employee_id} - ${salesPerson.employee_name} - ${salesPerson.phone}`}
-                    </MenuItem>
-                  ))}
-                </Select>
-                {formErrors.primary_sales_person && (
-                  <Typography variant="caption" color="error">
-                    {formErrors.primary_sales_person}
-                  </Typography>
-                )}
+                <Autocomplete
+                  options={salesPersons}
+                  getOptionLabel={(option) => `${option.employee_id} - ${option.employee_name} - ${option.phone}`}
+                  value={salesPersons.find((sp) => sp.employee_id === primarySalesPerson) || null}
+                  onChange={(event, newValue) => {
+                    setPrimarySalesPerson(newValue ? newValue.employee_id : null);
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Primary Sales Person"
+                      error={!!formErrors.primary_sales_person}
+                      helperText={formErrors.primary_sales_person}
+                    />
+                  )}
+                />
               </FormControl>
               <FormControl fullWidth>
-                <InputLabel>Secondary Sales Person</InputLabel>
-                <Select
-                  name="secondary_sales_person"
-                  defaultValue={selectedPerson?.secondary_sales_person || ""}
-                  label="Secondary Sales Person"
-                >
-                  {salesPersons.map((salesPerson) => (
-                    <MenuItem
-                      key={salesPerson.employee_id}
-                      value={salesPerson.employee_id}
-                      disabled={salesPerson.employee_id === primarySalesPerson}
-                    >
-                      {`${salesPerson.employee_id} - ${salesPerson.employee_name} - ${salesPerson.phone}`}
-                    </MenuItem>
-                  ))}
-                </Select>
+                <Autocomplete
+                  options={salesPersons.filter((sp) => sp.employee_id !== primarySalesPerson)}
+                  getOptionLabel={(option) => `${option.employee_id} - ${option.employee_name} - ${option.phone}`}
+                  value={salesPersons.find((sp) => sp.employee_id === secondarySalesPerson) || null}
+                  onChange={(event, newValue) => {
+                    setSecondarySalesPerson(newValue ? newValue.employee_id : null);
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Secondary Sales Person"
+                    />
+                  )}
+                />
               </FormControl>
             </Box>
           </DialogContent>
@@ -296,7 +298,7 @@ function MaharajJi() {
         </form>
       </Dialog>
     </Box>
-  )
+  );
 }
 
-export default MaharajJi
+export default MaharajJi;
