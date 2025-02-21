@@ -484,8 +484,7 @@ app.post("/leads", async (req, res) => {
 
         const leadId = result.insertId;
         const team = await pool.query("SELECT phone from AdinathTV_Employees where employee_id = ?",[sales_person_1]);
-        console.log(team);
-        sendWhatsAppMessage(team[0][0].phone,leadId, lead_name, poc_no, event_name, event_date, maharaj_mandir);
+        sendWhatsAppMessage(team[0].phone,leadId, lead_name, poc_no, event_name, event_date, maharaj_mandir);
         res.status(201).json({ message: "Lead added successfully.", leadId });
 
     } catch (err) {
@@ -496,7 +495,7 @@ app.post("/leads", async (req, res) => {
 
 // Update a lead
 app.put("/leads/:leadId", async (req, res) => {
-    const { leadId } = req.params
+  const { leadId } = req.params
   const {
     lead_name,
     event_name,
@@ -550,8 +549,8 @@ app.put("/leads/:leadId", async (req, res) => {
         sales_person_1,
         sales_person_2,
         status,
-        ...hostIds,
         leadId,
+        ...hostIds,
       ],
     )
 

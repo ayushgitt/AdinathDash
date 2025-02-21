@@ -356,7 +356,7 @@ function LeadManagement() {
                   sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
                   onChange={handleDedicatedPersonChange}
                 >
-                  <MenuItem onClick={() => setOpenCreateDialog(true)}>Create</MenuItem>
+                  {/* <MenuItem onClick={() => setOpenCreateDialog(true)}>Create</MenuItem> */ }
                   {dedicatedPersons.map((person) => (
                     <MenuItem key={person.id} value={person.id}>
                       {person.name}

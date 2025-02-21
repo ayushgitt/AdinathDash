@@ -28,10 +28,12 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   boxShadow: theme.shadows[3],
   marginTop: theme.spacing(2),
+  height: "65vh",
 }));
 
 const StyledTable = styled(Table)(({ theme }) => ({
   minWidth: 650,
+  overflowY: 'scroll'
 }));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
