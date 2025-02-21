@@ -182,7 +182,7 @@ function Booking() {
                 <Typography component="span">Basic Information</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <TextField fullWidth label="DATE" name="date" margin="normal" defaultValue={selectedBooking?.date} disabled />
+                <TextField fullWidth label="DATE" name="date" margin="normal" defaultValue={selectedBooking?.created_at} disabled />
                 <TextField
                   fullWidth
                   label="CLIENT NAME"
@@ -204,7 +204,7 @@ function Booking() {
                   label="MOBILE No."
                   name="mobileNo"
                   margin="normal"
-                  defaultValue={selectedBooking?.mobileNo}
+                  defaultValue={selectedBooking?.client_contact_no1}
                   disabled
                 />
                 <TextField
@@ -228,7 +228,7 @@ function Booking() {
                   label="PIN CODE"
                   name="pin_code"
                   margin="normal"
-                  defaultValue={selectedBooking?.pin_code}
+                  defaultValue={selectedBooking?.shooting_address_pincode}
                   disabled
                 />
               </AccordionDetails>
