@@ -320,7 +320,7 @@ function Booking() {
                   label="PAN No"
                   name="pan_no"
                   margin="normal"
-                  defaultValue={selectedBooking?.pan_no}
+                  defaultValue={selectedBooking?.PAN_no}
                   disabled
                 />
                 <TextField
@@ -328,7 +328,7 @@ function Booking() {
                   label="G.S.T No"
                   name="gst_no"
                   margin="normal"
-                  defaultValue={selectedBooking?.gst_no}
+                  defaultValue={selectedBooking?.GST_no}
                   disabled
                 />
               </AccordionDetails>
