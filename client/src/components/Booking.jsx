@@ -312,7 +312,7 @@ function Booking() {
                   label="PIN CODE"
                   name="billing_pin_code"
                   margin="normal"
-                  defaultValue={selectedBooking?.billing_pin_code}
+                  defaultValue={selectedBooking?.billing_address_pincode}
                   disabled
                 />
                 <TextField
