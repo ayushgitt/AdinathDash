@@ -63,6 +63,7 @@ function LeadManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [openCreateDialog, setOpenCreateDialog] = useState(false)
   const [newDedicatedPerson, setNewDedicatedPerson] = useState("")
+  const [formErrors, setFormErrors] = useState({})
 
   useEffect(() => {
     fetchLeads()
@@ -135,6 +136,19 @@ function LeadManagement() {
     setStep(1)
     setHosts([{ host_name: "", poc_contact: "" }])
     setLeadData({})
+    setFormErrors({})
+  }
+
+  const validateStep1 = () => {
+    const errors = {}
+    if (!leadData.lead_name) errors.lead_name = "Point Of Contact is required"
+    if (!leadData.event_name) errors.event_name = "Event Name is required"
+    if (!eventDate) errors.event_date = "Event Date is required"
+    if (!leadData.poc_no) errors.poc_no = "POC No. is required"
+    if (!leadData.location) errors.location = "Location is required"
+    if (!selectedDedicatedPerson) errors.maharaj_mandir = "Dedicated Person is required"
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const handleNext = (event) => {
@@ -146,7 +160,10 @@ function LeadManagement() {
     step1Data.sales_person_1 = selectedSalesPerson
 
     setLeadData({ ...leadData, ...step1Data })
-    setStep(2)
+
+    if (validateStep1()) {
+      setStep(2)
+    }
   }
 
   const handleSave = async (event) => {
@@ -301,23 +318,29 @@ function LeadManagement() {
               <>
                 <TextField
                   fullWidth
-                  label="Point Of Contact"
+                  label="Point Of Contact *"
                   name="lead_name"
                   margin="normal"
                   defaultValue={selectedLead?.lead_name}
                   sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                  error={!!formErrors.lead_name}
+                  helperText={formErrors.lead_name}
+                  required
                 />
                 <TextField
                   fullWidth
-                  label="Event Name"
+                  label="Event Name *"
                   name="event_name"
                   margin="normal"
                   defaultValue={selectedLead?.event_name}
                   sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                  error={!!formErrors.event_name}
+                  helperText={formErrors.event_name}
+                  required
                 />
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <DatePicker
-                    label="Event Date"
+                    label="Event Date *"
                     value={eventDate}
                     onChange={(newValue) => setEventDate(newValue)}
                     renderInput={(params) => (
@@ -326,37 +349,48 @@ function LeadManagement() {
                         fullWidth
                         margin="normal"
                         sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                        error={!!formErrors.event_date}
+                        helperText={formErrors.event_date}
+                        required
                       />
                     )}
                   />
                 </LocalizationProvider>
                 <TextField
                   fullWidth
-                  label="POC No."
+                  label="POC No. *"
                   name="poc_no"
                   margin="normal"
                   defaultValue={selectedLead?.poc_no}
                   sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                  error={!!formErrors.poc_no}
+                  helperText={formErrors.poc_no}
+                  required
                 />
                 <TextField
                   fullWidth
-                  label="Location"
+                  label="Location *"
                   name="location"
                   margin="normal"
                   defaultValue={selectedLead?.location}
                   sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
+                  error={!!formErrors.location}
+                  helperText={formErrors.location}
+                  required
                 />
                 <TextField
                   select
                   fullWidth
-                  label="Dedicated Person"
+                  label="Dedicated Person *"
                   name="maharaj_mandir"
                   value={selectedDedicatedPerson}
                   margin="normal"
                   sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
                   onChange={handleDedicatedPersonChange}
+                  error={!!formErrors.maharaj_mandir}
+                  helperText={formErrors.maharaj_mandir}
+                  required
                 >
-                  {/* <MenuItem onClick={() => setOpenCreateDialog(true)}>Create</MenuItem> */ }
                   {dedicatedPersons.map((person) => (
                     <MenuItem key={person.id} value={person.id}>
                       {person.name}
@@ -428,6 +462,7 @@ function LeadManagement() {
                       color: "#7e1519",
                     },
                   }}
+                  //  disabled={!leadData.lead_name || !leadData.event_name || !eventDate || !leadData.poc_no || !leadData.location || !selectedDedicatedPerson}
                 >
                   Next
                 </Button>
@@ -483,4 +518,3 @@ function LeadManagement() {
 }
 
 export default LeadManagement
-
