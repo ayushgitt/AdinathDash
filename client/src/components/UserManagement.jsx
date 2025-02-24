@@ -458,7 +458,7 @@ function UserManagement() {
                     <MenuItem value="">None</MenuItem>
                     {managers.map((manager) => (
                       <MenuItem key={manager.employee_id} value={manager.employee_id}>
-                        {manager.employee_name}
+                         {`${manager.employee_id} - ${manager.employee_name}`}
                       </MenuItem>
                     ))}
                   </Select>
