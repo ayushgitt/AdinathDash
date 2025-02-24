@@ -165,7 +165,7 @@ function UserManagement() {
     console.log(userData)
     // Form validation
     const errors = {}
-    //if (!userData.employee_name) errors.employee_name = "Employee name is required"
+    if (!userData.employee_name) errors.employee_name = "Employee name is required"
     if(!userData.email) errors.email = "Email is required"
     if (!userData.phone) errors.phone = "Phone number is required"
     if (!userData.department_id) errors.department_id = "Department is required"
@@ -337,7 +337,7 @@ function UserManagement() {
                 }}
               >
                 <StyledTextField
-                  label="Employee Name"
+                  label="Employee Name*"
                   name="employee_name"
                   defaultValue={selectedUser?.employee_name}
                   error={!!formErrors.employee_name}
@@ -349,6 +349,10 @@ function UserManagement() {
                   defaultValue={selectedUser?.phone}
                   error={!!formErrors.phone}
                   helperText={formErrors.phone}
+                  inputProps={{
+                    pattern: "^91\\d{10}$",
+                    title: "Phone number must be 10 digits without 91",
+                  }}
                 />
                 <StyledTextField
                   label="Email *"
@@ -356,6 +360,12 @@ function UserManagement() {
                   defaultValue={selectedUser?.email}
                   error={!!formErrors.email}
                   helperText={formErrors.email}
+                  inputProps={{
+                    type: "email",
+                    pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+                    title: "Enter a valid email address",
+                    required: true,
+                  }}
                 />
                 <StyledTextField label="Address" name="address" defaultValue={selectedUser?.address} />
                 <StyledTextField label="Work Email" name="work_email" defaultValue={selectedUser?.work_email} />
