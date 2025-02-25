@@ -33,7 +33,7 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
 
 const StyledTable = styled(Table)(({ theme }) => ({
   minWidth: 650,
-  overflowY: 'scroll'
+  overflowY: "scroll",
 }));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -46,12 +46,34 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
+// Helper function to format date/time in IST
+const formatDateIST = (dateString) => {
+  if (!dateString) return ""; // Return empty string if dateString is null, undefined, or empty
+
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) {
+    console.error("Invalid date:", dateString); // Log invalid dates for debugging
+    return ""; // Return empty string for invalid dates
+  }
+
+  return new Intl.DateTimeFormat("en-IN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "Asia/Kolkata",
+  }).format(date);
+};
+
 function Booking() {
   const [bookings, setBookings] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [shootingSchedules, setShootingSchedules] = useState([]);
   const [telecastSchedules, setTelecastSchedules] = useState([]);
+  const [leadDetails, setLeadDetails] = useState(null);
 
   useEffect(() => {
     fetchBookings();
@@ -67,6 +89,17 @@ function Booking() {
     }
   };
 
+  const fetchLeadDetails = async (leadId) => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/leads`);
+      const lead = response.data.find((lead) => lead.lead_id === leadId);
+      setLeadDetails(lead);
+    } catch (error) {
+      console.error("Error fetching lead details:", error);
+      alert("Failed to fetch lead details. Please try again.");
+    }
+  };
+
   const handleEdit = async (booking) => {
     setSelectedBooking(booking);
     try {
@@ -79,6 +112,10 @@ function Booking() {
         `${import.meta.env.VITE_API_URL}/bookings/${booking.booking_id}/telecast-schedules`
       );
       setTelecastSchedules(telecastResponse.data);
+
+      if (booking.client_id) {
+        fetchLeadDetails(booking.client_id);
+      }
     } catch (error) {
       console.error("Error fetching schedules:", error);
       alert("Failed to fetch schedules. Please try again.");
@@ -91,6 +128,7 @@ function Booking() {
     setSelectedBooking(null);
     setShootingSchedules([]);
     setTelecastSchedules([]);
+    setLeadDetails(null);
   };
 
   const handleSave = async (event) => {
@@ -134,7 +172,7 @@ function Booking() {
             {bookings.map((booking) => (
               <StyledTableRow key={booking.booking_id}>
                 <TableCell>{booking.booking_id}</TableCell>
-                <TableCell>{booking.date}</TableCell>
+                <TableCell>{formatDateIST(booking.date)}</TableCell>
                 <TableCell>{booking.client_name}</TableCell>
                 <TableCell>{booking.mobileNo}</TableCell>
                 <TableCell>{booking.shooting_address}</TableCell>
@@ -182,7 +220,14 @@ function Booking() {
                 <Typography component="span">Basic Information</Typography>
               </AccordionSummary>
               <AccordionDetails>
-                <TextField fullWidth label="DATE" name="date" margin="normal" defaultValue={selectedBooking?.created_at} disabled />
+                <TextField
+                  fullWidth
+                  label="DATE"
+                  name="date"
+                  margin="normal"
+                  defaultValue={formatDateIST(selectedBooking?.created_at)}
+                  disabled
+                />
                 <TextField
                   fullWidth
                   label="CLIENT NAME"
@@ -246,7 +291,7 @@ function Booking() {
                       label="SHOOTING TIME"
                       name="shooting_time"
                       margin="normal"
-                      defaultValue={schedule.shooting_starttime}
+                      defaultValue={formatDateIST(schedule.shooting_starttime)}
                       disabled
                     />
                     <TextField
@@ -254,7 +299,7 @@ function Booking() {
                       label="REPORTING TIME"
                       name="reporting_time"
                       margin="normal"
-                      defaultValue={schedule.cameraman_rep_time}
+                      defaultValue={formatDateIST(schedule.cameraman_rep_time)}
                       disabled
                     />
                     <TextField
@@ -262,7 +307,7 @@ function Booking() {
                       label="CAMERAMAN REPORTING DATE"
                       name="cameraman_reporting_date"
                       margin="normal"
-                      defaultValue={schedule.cameraman_rep_date}
+                      defaultValue={formatDateIST(schedule.cameraman_rep_date)}
                       disabled
                     />
                     <TextField
@@ -270,7 +315,7 @@ function Booking() {
                       label="SHOOTING DATE: From"
                       name="shooting_date_from"
                       margin="normal"
-                      defaultValue={schedule.shooting_date}
+                      defaultValue={formatDateIST(schedule.shooting_date)}
                       disabled
                     />
                     <TextField
@@ -278,7 +323,7 @@ function Booking() {
                       label="SHOOTING DATE: To"
                       name="shooting_date_to"
                       margin="normal"
-                      defaultValue={schedule.shooting_endtime}
+                      defaultValue={formatDateIST(schedule.shooting_endtime)}
                       disabled
                     />
                   </Box>
@@ -347,7 +392,14 @@ function Booking() {
                   defaultValue={selectedBooking?.program}
                   disabled
                 />
-                <TextField fullWidth label="LIVE" name="live" margin="normal" defaultValue={selectedBooking?.live} disabled />
+                <TextField
+                  fullWidth
+                  label="LIVE"
+                  name="live"
+                  margin="normal"
+                  defaultValue={selectedBooking?.live}
+                  disabled
+                />
                 <TextField
                   fullWidth
                   label="VISHESH"
@@ -364,7 +416,14 @@ function Booking() {
                   defaultValue={selectedBooking?.scroll}
                   disabled
                 />
-                <TextField fullWidth label="PROMO" name="promo" margin="normal" defaultValue={selectedBooking?.promo} disabled />
+                <TextField
+                  fullWidth
+                  label="PROMO"
+                  name="promo"
+                  margin="normal"
+                  defaultValue={selectedBooking?.promo}
+                  disabled
+                />
                 <TextField
                   fullWidth
                   label="L-BAND"
@@ -373,7 +432,14 @@ function Booking() {
                   defaultValue={selectedBooking?.l_band}
                   disabled
                 />
-                <TextField fullWidth label="TVC" name="tvc" margin="normal" defaultValue={selectedBooking?.tvc} disabled />
+                <TextField
+                  fullWidth
+                  label="TVC"
+                  name="tvc"
+                  margin="normal"
+                  defaultValue={selectedBooking?.tvc}
+                  disabled
+                />
                 <TextField
                   fullWidth
                   label="Other (If Any)"
@@ -397,7 +463,7 @@ function Booking() {
                       label="TELECAST DATE: From"
                       name="telecast_date_from"
                       margin="normal"
-                      defaultValue={schedule.telecast_date}
+                      defaultValue={formatDateIST(schedule.telecast_date)}
                       disabled
                     />
                     <TextField
@@ -405,7 +471,7 @@ function Booking() {
                       label="TELECAST DATE: To"
                       name="telecast_date_to"
                       margin="normal"
-                      defaultValue={schedule.telecast_endtime}
+                      defaultValue={formatDateIST(schedule.telecast_endtime)}
                       disabled
                     />
                     <TextField
@@ -421,7 +487,7 @@ function Booking() {
                       label="TELECAST TIME"
                       name="telecast_time"
                       margin="normal"
-                      defaultValue={schedule.telecast_starttime}
+                      defaultValue={formatDateIST(schedule.telecast_starttime)}
                       disabled
                     />
                   </Box>
@@ -455,7 +521,7 @@ function Booking() {
                   label="CHEQUE/DD NO"
                   name="cheque_dd_no"
                   margin="normal"
-                  defaultValue={selectedBooking?.cheque_dd_no}
+                  defaultValue={selectedBooking?.cheque_no}
                   disabled
                 />
                 <TextField
@@ -463,7 +529,7 @@ function Booking() {
                   label="CHEQUE DATE"
                   name="cheque_date"
                   margin="normal"
-                  defaultValue={selectedBooking?.cheque_date}
+                  defaultValue={formatDateIST(selectedBooking?.cheque_date)}
                   disabled
                 />
                 <TextField
@@ -522,6 +588,69 @@ function Booking() {
                   defaultValue={selectedBooking?.designation}
                   disabled
                 />
+              </AccordionDetails>
+            </Accordion>
+
+            {/* New Lead Details Section */}
+            <Accordion>
+              <AccordionSummary expandIcon={<ArrowDownwardIcon />} aria-controls="panel8-content" id="panel8-header">
+                <Typography component="span">Lead Details</Typography>
+              </AccordionSummary>
+              <AccordionDetails>
+                {leadDetails ? (
+                  <>
+                    <TextField
+                      fullWidth
+                      label="Lead Name"
+                      name="lead_name"
+                      margin="normal"
+                      defaultValue={leadDetails.lead_name}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="Event Name"
+                      name="event_name"
+                      margin="normal"
+                      defaultValue={leadDetails.event_name}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="Event Date"
+                      name="event_date"
+                      margin="normal"
+                      defaultValue={formatDateIST(leadDetails.event_date)}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="POC No"
+                      name="poc_no"
+                      margin="normal"
+                      defaultValue={leadDetails.poc_no}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="Location"
+                      name="location"
+                      margin="normal"
+                      defaultValue={leadDetails.location}
+                      disabled
+                    />
+                    <TextField
+                      fullWidth
+                      label="Maharaj/Mandir"
+                      name="maharaj_mandir"
+                      margin="normal"
+                      defaultValue={leadDetails.maharaj_mandir}
+                      disabled
+                    />
+                  </>
+                ) : (
+                  <Typography>No lead details available.</Typography>
+                )}
               </AccordionDetails>
             </Accordion>
           </DialogContent>
