@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import axios from "axios"
 import {
@@ -25,6 +23,7 @@ import { styled } from "@mui/material/styles"
 import { DatePicker } from "@mui/x-date-pickers/DatePicker"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns"
+import VisibilityIcon from "@mui/icons-material/Visibility"
 
 const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
@@ -48,6 +47,17 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }))
 
+const StatusBadge = styled('span')(({ status }) => ({
+  padding: '4px 8px',
+  borderRadius: '4px',
+  fontWeight: 'bold',
+  backgroundColor: 
+    status === 'Accepted' ? '#4caf50' :
+    status === 'Rejected' ? '#f44336' :
+    status === 'New' ? '#ffeb3b' : '#grey',
+  color: status === 'New' ? '#000' : '#fff',
+}))
+
 function LeadManagement() {
   const [leads, setLeads] = useState([])
   const [openDialog, setOpenDialog] = useState(false)
@@ -57,6 +67,7 @@ function LeadManagement() {
   const [selectedDedicatedPerson, setSelectedDedicatedPerson] = useState("")
   const [salesPersons, setSalesPersons] = useState([])
   const [selectedSalesPerson, setSelectedSalesPerson] = useState("")
+  const [selectedSalesPersonWithLead, setSelectedSalesPersonWithLead] = useState("")
   const [step, setStep] = useState(1)
   const [hosts, setHosts] = useState([{ host_name: "", poc_contact: "" }])
   const [leadData, setLeadData] = useState({})
@@ -64,6 +75,34 @@ function LeadManagement() {
   const [openCreateDialog, setOpenCreateDialog] = useState(false)
   const [newDedicatedPerson, setNewDedicatedPerson] = useState("")
   const [formErrors, setFormErrors] = useState({})
+  const [openViewDialog, setOpenViewDialog] = useState(false)
+  const [viewLead, setViewLead] = useState(null)
+
+  const convertUTCToIST = (date) => {
+    if (!date) return null;
+    const utcDate = new Date(date);
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    return new Date(utcDate.getTime() + istOffset);
+  };
+
+  const convertISTToUTC = (date) => {
+    if (!date) return null;
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    return new Date(date.getTime() - istOffset);
+  };
+
+  const formatDateIST = (date) => {
+    if (!date) return "";
+    return new Intl.DateTimeFormat("en-IN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: "Asia/Kolkata",
+    }).format(new Date(date));
+  };
 
   useEffect(() => {
     fetchLeads()
@@ -100,15 +139,16 @@ function LeadManagement() {
 
   const handleEdit = async (lead) => {
     setSelectedLead(lead)
-    setEventDate(lead.event_date ? new Date(lead.event_date) : null)
+    const eventDateIST = convertUTCToIST(lead.event_date);
+    setEventDate(eventDateIST)
 
-    // Fetch the dedicated person details
     const dedicatedPerson = dedicatedPersons.find((person) => person.id === lead.maharaj_mandir)
     setSelectedDedicatedPerson(dedicatedPerson ? dedicatedPerson.id : "")
 
+    // Set both sales person states
     setSelectedSalesPerson(lead.sales_person_1 || "")
+    setSelectedSalesPersonWithLead(`${lead.sales_person_1}${lead.lead_name ? ` - ${lead.lead_name}` : ""}`)
 
-    // Fetch HOCs for this lead
     try {
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/hocs/${lead.lead_id}`)
       setHosts(
@@ -127,16 +167,27 @@ function LeadManagement() {
     setStep(1)
   }
 
+  const handleView = (lead) => {
+    setViewLead(lead)
+    setOpenViewDialog(true)
+  }
+
   const handleClose = () => {
     setOpenDialog(false)
     setSelectedLead(null)
     setEventDate(null)
     setSelectedDedicatedPerson("")
     setSelectedSalesPerson("")
+    setSelectedSalesPersonWithLead("")
     setStep(1)
     setHosts([{ host_name: "", poc_contact: "" }])
     setLeadData({})
     setFormErrors({})
+  }
+
+  const handleCloseViewDialog = () => {
+    setOpenViewDialog(false)
+    setViewLead(null)
   }
 
   const validateStep1 = () => {
@@ -156,7 +207,8 @@ function LeadManagement() {
     const formData = new FormData(event.target)
     const step1Data = Object.fromEntries(formData.entries())
 
-    step1Data.event_date = eventDate ? eventDate.toISOString().split("T")[0] : ""
+    const eventDateUTC = eventDate ? convertISTToUTC(eventDate).toISOString() : ""
+    step1Data.event_date = eventDateUTC
     step1Data.sales_person_1 = selectedSalesPerson
 
     setLeadData({ ...leadData, ...step1Data })
@@ -172,19 +224,19 @@ function LeadManagement() {
     const formData = new FormData(event.target)
     const step2Data = Object.fromEntries(formData.entries())
 
+    const eventDateUTC = eventDate ? convertISTToUTC(eventDate).toISOString() : ""
+
     const finalLeadData = {
       ...leadData,
       ...step2Data,
-      event_date: eventDate ? eventDate.toISOString().split("T")[0] : "",
+      event_date: eventDateUTC,
       sales_person_1: selectedSalesPerson,
-      maharaj_mandir: selectedDedicatedPerson, // Use the ID instead of the name
+      maharaj_mandir: selectedDedicatedPerson,
       hocs: hosts.map((host) => ({
         host_name: host.host_name,
         poc_contact: host.poc_contact,
       })),
     }
-
-    console.log("Final Lead Data:", finalLeadData)
 
     try {
       if (selectedLead) {
@@ -200,7 +252,7 @@ function LeadManagement() {
     }
   }
 
-  const handleDedicatedPersonChange = (e) => {
+  const handleDedicatedPersonChange = async (e) => {
     const personId = e.target.value
     setSelectedDedicatedPerson(personId)
 
@@ -208,6 +260,22 @@ function LeadManagement() {
       const dedicatedPerson = dedicatedPersons.find((person) => person.id === personId)
       if (dedicatedPerson) {
         setSelectedSalesPerson(dedicatedPerson.primary_sales_person)
+        
+        // Fetch the lead information for this sales person
+        try {
+          console.log(dedicatedPerson);
+          const response = await axios.get(`${import.meta.env.VITE_API_URL}/leads?sales_person_1=${dedicatedPerson.primary_sales_person}`)
+          console.log(response.data);
+          const leadInfo = response.data[0] // Get the first lead associated with this sales person
+          if (leadInfo) {
+            setSelectedSalesPersonWithLead(`${dedicatedPerson.primary_sales_person} - ${leadInfo.lead_name}`)
+          } else {
+            setSelectedSalesPersonWithLead(dedicatedPerson.primary_sales_person)
+          }
+        } catch (error) {
+          console.error("Error fetching lead info:", error)
+          setSelectedSalesPersonWithLead(dedicatedPerson.primary_sales_person)
+        }
       }
     }
   }
@@ -221,6 +289,11 @@ function LeadManagement() {
   const handleHostChange = (index, field, value) => {
     const newHosts = [...hosts]
     newHosts[index][field] = value
+    setHosts(newHosts)
+  }
+
+  const handleRemoveHost = (index) => {
+    const newHosts = hosts.filter((_, i) => i !== index)
     setHosts(newHosts)
   }
 
@@ -294,12 +367,17 @@ function LeadManagement() {
                 <TableCell>{lead.lead_id}</TableCell>
                 <TableCell>{lead.lead_name}</TableCell>
                 <TableCell>{lead.event_name}</TableCell>
-                <TableCell>{lead.event_date}</TableCell>
+                <TableCell>
+                  {lead.event_date ? formatDateIST(lead.event_date) : ""}
+                </TableCell>
                 <TableCell>{lead.poc_no}</TableCell>
                 <TableCell>{lead.sales_person_1}</TableCell>
                 <TableCell>
                   <Button variant="outlined" onClick={() => handleEdit(lead)}>
                     Edit
+                  </Button>
+                  <Button onClick={() => handleView(lead)}>
+                    <VisibilityIcon />
                   </Button>
                 </TableCell>
               </StyledTableRow>
@@ -402,7 +480,7 @@ function LeadManagement() {
                   fullWidth
                   label="Primary Sales Person"
                   name="sales_person_1"
-                  value={selectedSalesPerson}
+                  value={selectedSalesPersonWithLead}
                   margin="normal"
                   sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
                   disabled
@@ -414,7 +492,7 @@ function LeadManagement() {
               <>
                 {hosts.map((host, index) => (
                   <Grid container spacing={2} key={index}>
-                    <Grid item xs={6}>
+                    <Grid item xs={5}>
                       <TextField
                         fullWidth
                         label="Host"
@@ -425,7 +503,7 @@ function LeadManagement() {
                         sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
                       />
                     </Grid>
-                    <Grid item xs={6}>
+                    <Grid item xs={5}>
                       <TextField
                         fullWidth
                         label="Host Contact"
@@ -435,6 +513,16 @@ function LeadManagement() {
                         onChange={(e) => handleHostChange(index, "poc_contact", e.target.value)}
                         sx={{ backgroundColor: "white", "& .MuiInputLabel-root": { color: "#7e1519" } }}
                       />
+                    </Grid>
+                    <Grid item xs={2}>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => handleRemoveHost(index)}
+                        sx={{ mt: 2 }}
+                      >
+                        Remove
+                      </Button>
                     </Grid>
                   </Grid>
                 ))}
@@ -462,7 +550,6 @@ function LeadManagement() {
                       color: "#7e1519",
                     },
                   }}
-                  //  disabled={!leadData.lead_name || !leadData.event_name || !eventDate || !leadData.poc_no || !leadData.location || !selectedDedicatedPerson}
                 >
                   Next
                 </Button>
@@ -495,21 +582,35 @@ function LeadManagement() {
         </form>
       </Dialog>
 
-      <Dialog open={openCreateDialog} onClose={() => setOpenCreateDialog(false)}>
-        <DialogTitle>Create Maharaj/Mandir</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="Name"
-            value={newDedicatedPerson}
-            onChange={(e) => setNewDedicatedPerson(e.target.value)}
-            margin="normal"
-          />
+      <Dialog open={openViewDialog} onClose={handleCloseViewDialog} maxWidth="md" fullWidth>
+        <DialogTitle sx={{ backgroundColor: "#fdedd1", color: "#7e1519" }}>Lead Details</DialogTitle>
+        <DialogContent sx={{ backgroundColor: "#fdedd1" }}>
+          {viewLead && (
+            <>
+              <Typography variant="h6">Lead ID: {viewLead.lead_id}</Typography>
+              <Typography variant="h6">Point Of Contact: {viewLead.lead_name}</Typography>
+              <Typography variant="h6">Event Name: {viewLead.event_name}</Typography>
+              <Typography variant="h6">
+                Event Date: {viewLead.event_date ? formatDateIST(viewLead.event_date) : ""}
+              </Typography>
+              <Typography variant="h6">POC No.: {viewLead.poc_no}</Typography>
+              <Typography variant="h6">Primary Sales Person: {viewLead.sales_person_1}</Typography>
+              <Typography variant="h6">Location: {viewLead.location}</Typography>
+              <Typography variant="h6">Dedicated Person: {viewLead.maharaj_mandir}</Typography>
+              <Typography variant="h6">
+                Status: <StatusBadge status={viewLead.status || 'New'}>{viewLead.status || 'New'}</StatusBadge>
+              </Typography>
+              {viewLead.hocs && viewLead.hocs.map((host, index) => (
+                <Typography key={index} variant="body1">
+                  Host {index + 1}: {host.host_name} - {host.poc_contact}
+                </Typography>
+              ))}
+            </>
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCreateDialog(false)}>Cancel</Button>
-          <Button onClick={handleCreateDedicatedPerson} color="primary">
-            Create
+        <DialogActions sx={{ backgroundColor: "#fdedd1" }}>
+          <Button onClick={handleCloseViewDialog} sx={{ color: "#7e1519" }}>
+            Close
           </Button>
         </DialogActions>
       </Dialog>
