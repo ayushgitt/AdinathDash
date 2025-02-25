@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   Box,
@@ -22,8 +20,10 @@ import {
   FormControl,
   InputLabel,
   Autocomplete,
+  MenuItem,
+  Select,
 } from "@mui/material";
-import { Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
+import { Delete as DeleteIcon, Edit as EditIcon, Eye as EyeIcon, Pencil as PencilIcon } from "lucide-react";
 import { styled } from "@mui/material/styles";
 
 // Styled components for custom table elements
@@ -33,9 +33,9 @@ const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
   marginTop: theme.spacing(2),
   overflowY: "scroll",
   height: "70vh",
-  maxWidth: "100%", // Prevent horizontal scrolling
+  maxWidth: "100%",
   "& .MuiTable-root": {
-    tableLayout: "fixed", // Fixed table layout to prevent horizontal scrolling
+    tableLayout: "fixed",
   },
 }));
 
@@ -47,13 +47,13 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
   whiteSpace: "nowrap",
   overflow: "hidden",
   textOverflow: "ellipsis",
-  maxWidth: "150px", // Limit cell width
+  maxWidth: "150px",
 }));
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
-  backgroundColor: "#fdedd1", // Background color for table entries
+  backgroundColor: "#fdedd1",
   "&:nth-of-type(odd)": {
-    backgroundColor: "#fdedd1", // Ensure odd rows also have the same color
+    backgroundColor: "#fdedd1",
   },
   "&:hover": {
     backgroundColor: theme.palette.action.selected,
@@ -69,6 +69,9 @@ function MaharajJi() {
   const [salesPersons, setSalesPersons] = useState([]);
   const [primarySalesPerson, setPrimarySalesPerson] = useState(null);
   const [secondarySalesPerson, setSecondarySalesPerson] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [viewDetailsDialog, setViewDetailsDialog] = useState(false);
+  const [selectedDetails, setSelectedDetails] = useState(null);
 
   useEffect(() => {
     fetchDedicatedPersons();
@@ -102,6 +105,11 @@ function MaharajJi() {
     setOpenDialog(true);
   };
 
+  const handleViewDetails = (person) => {
+    setSelectedDetails(person);
+    setViewDetailsDialog(true);
+  };
+
   const handleClose = () => {
     setOpenDialog(false);
     setSelectedPerson(null);
@@ -110,20 +118,23 @@ function MaharajJi() {
     setSecondarySalesPerson(null);
   };
 
+  const handleCloseDetails = () => {
+    setViewDetailsDialog(false);
+    setSelectedDetails(null);
+  };
+
   const handleSave = async (event) => {
     event.preventDefault();
     const formData = new FormData(event.target);
     const personData = Object.fromEntries(formData.entries());
 
-    // Add primary and secondary sales person IDs to the form data
     personData.primary_sales_person = primarySalesPerson;
     personData.secondary_sales_person = secondarySalesPerson;
 
-    // Form validation
     const errors = {};
-    if (!personData.name) errors.name = "Name is required";
-    if (!personData.category) errors.category = "Category is required";
-    if (!personData.primary_sales_person) errors.primary_sales_person = "Primary Sales Person is required";
+    if (!personData.name) errors.name = "Name is required*";
+    if (!personData.category) errors.category = "Category is required*";
+    if (!personData.primary_sales_person) errors.primary_sales_person = "Primary Sales Person is required*";
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -136,7 +147,7 @@ function MaharajJi() {
         : await axios.post(`${import.meta.env.VITE_API_URL}/dedicated_persons`, personData);
 
       if (response.status === 200 || response.status === 201) {
-        await fetchDedicatedPersons(); // Refresh the list
+        await fetchDedicatedPersons();
         handleClose();
       } else {
         throw new Error("Unexpected response status");
@@ -150,30 +161,45 @@ function MaharajJi() {
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${import.meta.env.VITE_API_URL}/dedicated_persons/${id}`);
-      fetchDedicatedPersons(); // Refresh the list
+      fetchDedicatedPersons();
     } catch (error) {
       console.error("Error deleting dedicated person:", error);
       alert("Failed to delete dedicated person. Please try again.");
     }
   };
 
+  const filteredPersons = dedicatedPersons.filter(person =>
+    person.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    person.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <Box sx={{ height: "100vh", overflow: "hidden", p: 3, backgroundColor: "rgba(253,232,199,255)" }}>
       <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Typography variant="h4">Maharaj Ji</Typography>
-        <Button
-          variant="contained"
-          onClick={() => setOpenDialog(true)}
-          sx={{
-            backgroundColor: "#7e1519",
-            "&:hover": {
-              backgroundColor: "#fdedd1",
-              color: "#7e1519",
-            },
-          }}
-        >
-          Add Maharaj Ji
-        </Button>
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <TextField
+            placeholder="Search..."
+            variant="outlined"
+            size="small"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ backgroundColor: "white" }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => setOpenDialog(true)}
+            sx={{
+              backgroundColor: "#7e1519",
+              "&:hover": {
+                backgroundColor: "#fdedd1",
+                color: "#7e1519",
+              },
+            }}
+          >
+            Add Maharaj Ji
+          </Button>
+        </Box>
       </Box>
 
       <StyledTableContainer component={Paper}>
@@ -189,7 +215,7 @@ function MaharajJi() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {dedicatedPersons.map((person) => (
+            {filteredPersons.map((person) => (
               <StyledTableRow key={person.id}>
                 <StyledTableCell>{person.id}</StyledTableCell>
                 <StyledTableCell>{person.name}</StyledTableCell>
@@ -197,8 +223,11 @@ function MaharajJi() {
                 <StyledTableCell>{person.primary_sales_person}</StyledTableCell>
                 <StyledTableCell>{person.secondary_sales_person || "N/A"}</StyledTableCell>
                 <StyledTableCell>
+                  <IconButton onClick={() => handleViewDetails(person)} color="primary" size="small">
+                    <EyeIcon size={20} />
+                  </IconButton>
                   <IconButton onClick={() => handleEdit(person)} color="primary" size="small">
-                    <EditIcon />
+                    <PencilIcon size={20} />
                   </IconButton>
                   <IconButton onClick={() => handleDelete(person.id)} color="error" size="small">
                     <DeleteIcon />
@@ -210,6 +239,7 @@ function MaharajJi() {
         </StyledTable>
       </StyledTableContainer>
 
+      {/* Add/Edit Dialog */}
       <Dialog
         open={openDialog}
         onClose={handleClose}
@@ -236,22 +266,27 @@ function MaharajJi() {
               }}
             >
               <TextField
-                label="Name"
+                label="Name*"
                 name="name"
                 defaultValue={selectedPerson?.name}
                 error={!!formErrors.name}
                 helperText={formErrors.name}
                 fullWidth
+                required
               />
-              <TextField
-                label="Category"
-                name="category"
-                defaultValue={selectedPerson?.category}
-                error={!!formErrors.category}
-                helperText={formErrors.category}
-                fullWidth
-              />
-              <FormControl fullWidth error={!!formErrors.primary_sales_person}>
+              <FormControl fullWidth required error={!!formErrors.category}>
+                <InputLabel>Category*</InputLabel>
+                <Select
+                  name="category"
+                  defaultValue={selectedPerson?.category || ""}
+                  label="Category*"
+                >
+                  <MenuItem value="Maharaj ji">Maharaj ji</MenuItem>
+                  <MenuItem value="Mata ji">Mata ji</MenuItem>
+                  <MenuItem value="Mandir">Mandir</MenuItem>
+                </Select>
+              </FormControl>
+              <FormControl fullWidth required error={!!formErrors.primary_sales_person}>
                 <Autocomplete
                   options={salesPersons}
                   getOptionLabel={(option) => `${option.employee_id} - ${option.employee_name} - ${option.phone}`}
@@ -262,9 +297,10 @@ function MaharajJi() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Primary Sales Person"
+                      label="Primary Sales Person*"
                       error={!!formErrors.primary_sales_person}
                       helperText={formErrors.primary_sales_person}
+                      required
                     />
                   )}
                 />
@@ -296,6 +332,36 @@ function MaharajJi() {
             </Button>
           </DialogActions>
         </form>
+      </Dialog>
+
+      {/* View Details Dialog */}
+      <Dialog
+        open={viewDetailsDialog}
+        onClose={handleCloseDetails}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: "#fdedd1",
+          },
+        }}
+      >
+        <DialogTitle>Details</DialogTitle>
+        <DialogContent>
+          {selectedDetails && (
+            <Box sx={{ p: 2 }}>
+              <Typography variant="body1" sx={{ mb: 2 }}><strong>Name:</strong> {selectedDetails.name}</Typography>
+              <Typography variant="body1" sx={{ mb: 2 }}><strong>Category:</strong> {selectedDetails.category}</Typography>
+              <Typography variant="body1" sx={{ mb: 2 }}><strong>Primary Sales Person:</strong> {selectedDetails.primary_sales_person}</Typography>
+              <Typography variant="body1"><strong>Secondary Sales Person:</strong> {selectedDetails.secondary_sales_person || "N/A"}</Typography>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDetails} variant="contained" sx={{ backgroundColor: "#7e1519" }}>
+            Close
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );
