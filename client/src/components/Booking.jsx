@@ -172,11 +172,11 @@ function Booking() {
             {bookings.map((booking) => (
               <StyledTableRow key={booking.booking_id}>
                 <TableCell>{booking.booking_id}</TableCell>
-                <TableCell>{formatDateIST(booking.date)}</TableCell>
+                <TableCell>{formatDateIST(booking.created_at)}</TableCell>
                 <TableCell>{booking.client_name}</TableCell>
-                <TableCell>{booking.mobileNo}</TableCell>
+                <TableCell>{booking.client_contact_no1}</TableCell>
                 <TableCell>{booking.shooting_address}</TableCell>
-                <TableCell>{booking.bookingAmount}</TableCell>
+                <TableCell>{booking.booking_amount}</TableCell>
                 <TableCell>
                   <Button
                     onClick={() => handleEdit(booking)}
