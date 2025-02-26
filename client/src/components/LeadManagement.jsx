@@ -224,7 +224,7 @@ function LeadManagement() {
     const formData = new FormData(event.target)
     const step2Data = Object.fromEntries(formData.entries())
 
-    const eventDateUTC = eventDate ? convertISTToUTC(eventDate).toISOString() : ""
+    const eventDateUTC = eventDate ? convertISTToUTC(eventDate).toISOString().split('T')[0] : ""
 
     const finalLeadData = {
       ...leadData,
