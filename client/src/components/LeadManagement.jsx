@@ -139,7 +139,7 @@ function LeadManagement() {
 
   const handleEdit = async (lead) => {
     setSelectedLead(lead)
-    const eventDateIST = convertUTCToIST(lead.event_date);
+    const eventDateIST = convertUTCToIST(lead.event_date).toISOString().split('T')[0];
     setEventDate(eventDateIST)
 
     const dedicatedPerson = dedicatedPersons.find((person) => person.id === lead.maharaj_mandir)
